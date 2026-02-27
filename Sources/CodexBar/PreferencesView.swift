@@ -61,7 +61,7 @@ struct PreferencesView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
-        .frame(width: self.contentWidth, height: self.contentHeight)
+        .frame(minWidth: PreferencesTab.defaultWidth, idealWidth: PreferencesTab.defaultWidth, maxWidth: PreferencesTab.providersWidth, minHeight: PreferencesTab.windowHeight, idealHeight: PreferencesTab.windowHeight, maxHeight: PreferencesTab.windowHeight)
         .onAppear {
             self.updateLayout(for: self.selection.tab, animate: false)
             self.ensureValidTabSelection()
