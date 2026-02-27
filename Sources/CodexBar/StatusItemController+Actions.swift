@@ -155,10 +155,8 @@ extension StatusItemController {
         DispatchQueue.main.async {
             self.preferencesSelection.tab = tab
             NSApp.activate(ignoringOtherApps: true)
-            NotificationCenter.default.post(
-                name: .codexbarOpenSettings,
-                object: nil,
-                userInfo: ["tab": tab.rawValue])
+            // Use SwiftUI Settings scene to open preferences window
+            _ = NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
         }
     }
 
