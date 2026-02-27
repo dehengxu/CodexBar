@@ -1,9 +1,7 @@
-import CodexBarMacroSupport
 import Foundation
 
-@ProviderDescriptorRegistration
-@ProviderDescriptorDefinition
 public enum JetBrainsProviderDescriptor {
+    static let descriptor = JetBrainsProviderDescriptor.makeDescriptor()
     static func makeDescriptor() -> ProviderDescriptor {
         ProviderDescriptor(
             id: .jetbrains,

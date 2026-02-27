@@ -78,17 +78,17 @@ public enum GeminiStatusProbeError: LocalizedError, Sendable, Equatable {
     public var errorDescription: String? {
         switch self {
         case .geminiNotInstalled:
-            "Gemini CLI is not installed or not on PATH."
+            return "Gemini CLI is not installed or not on PATH."
         case .notLoggedIn:
-            "Not logged in to Gemini. Run 'gemini' in Terminal to authenticate."
+            return "Not logged in to Gemini. Run 'gemini' in Terminal to authenticate."
         case let .unsupportedAuthType(authType):
-            "Gemini \(authType) auth not supported. Use Google account (OAuth) instead."
+            return "Gemini \(authType) auth not supported. Use Google account (OAuth) instead."
         case let .parseFailed(msg):
-            "Could not parse Gemini usage: \(msg)"
+            return "Could not parse Gemini usage: \(msg)"
         case .timedOut:
-            "Gemini quota API request timed out."
+            return "Gemini quota API request timed out."
         case let .apiError(msg):
-            "Gemini API error: \(msg)"
+            return "Gemini API error: \(msg)"
         }
     }
 }
@@ -273,17 +273,21 @@ public struct GeminiStatusProbe: Sendable {
         // - free-tier: Personal free account (1000 req/day limit)
         // - legacy-tier: Unknown legacy/grandfathered tier
         // - nil (API failed): Leave blank (no display)
-        let plan: String? = switch (caStatus.tier, claims.hostedDomain) {
+        let plan: String?
+        switch (caStatus.tier, claims.hostedDomain) {
         case (.standard, _):
-            "Paid"
+            plan = "Paid"
         case let (.free, .some(domain)):
-            { Self.log.info("Workspace account detected", metadata: ["domain": domain]); return "Workspace" }()
+            Self.log.info("Workspace account detected", metadata: ["domain": domain])
+            plan = "Workspace"
         case (.free, .none):
-            { Self.log.info("Personal free account"); return "Free" }()
+            Self.log.info("Personal free account")
+            plan = "Free"
         case (.legacy, _):
-            "Legacy"
+            plan = "Legacy"
         case (.none, _):
-            { Self.log.info("Tier detection failed, leaving plan blank"); return nil }()
+            Self.log.info("Tier detection failed, leaving plan blank")
+            plan = nil
         }
 
         return GeminiStatusSnapshot(

@@ -3,7 +3,7 @@ import CodexBarCore
 @MainActor
 extension StatusItemController {
     func runClaudeLoginFlow() async {
-        let phaseHandler: @Sendable (ClaudeLoginRunner.Phase) -> Void = { [weak self] phase in
+        let phaseHandler: (ClaudeLoginRunner.Phase) -> Void = { [weak self] phase in
             Task { @MainActor in
                 switch phase {
                 case .requesting: self?.loginPhase = .requesting

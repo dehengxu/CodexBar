@@ -1,16 +1,27 @@
 import AppKit
 import CodexBarCore
-import Observation
+import Combine
 import QuartzCore
 import SwiftUI
+
+// Protocols moved out of extension for Swift 5.7 compatibility
+@MainActor
+private protocol MenuCardHighlighting: AnyObject {
+    func setHighlighted(_ highlighted: Bool)
+}
+
+@MainActor
+private protocol MenuCardMeasuring: AnyObject {
+    func measuredHeight(width: CGFloat) -> CGFloat
+}
 
 extension ProviderSwitcherSelection {
     fileprivate var provider: UsageProvider? {
         switch self {
         case .overview:
-            nil
+            return nil
         case let .provider(provider):
-            provider
+            return provider
         }
     }
 }
@@ -47,7 +58,7 @@ extension StatusItemController {
     private static let menuCardBaseWidth: CGFloat = 310
     private static let maxOverviewProviders = SettingsStore.mergedOverviewProviderLimit
     private static let overviewRowIdentifierPrefix = "overviewRow-"
-    private static let menuOpenRefreshDelay: Duration = .seconds(1.2)
+    private static let menuOpenRefreshDelay: TimeInterval = 1.2
     private struct OpenAIWebMenuItems {
         let hasUsageBreakdown: Bool
         let hasCreditsHistory: Bool
@@ -155,13 +166,14 @@ extension StatusItemController {
                 includesOverview: includesOverview)
             : nil
         let isOverviewSelected = switcherSelection == .overview
-        let selectedProvider = if isOverviewSelected {
-            self.resolvedMenuProvider(enabledProviders: enabledProviders)
+        let selectedProvider: UsageProvider
+        if isOverviewSelected {
+            selectedProvider = self.resolvedMenuProvider(enabledProviders: enabledProviders) ?? .codex
         } else {
-            switcherSelection?.provider ?? provider
+            selectedProvider = switcherSelection?.provider ?? provider ?? .codex
         }
         let menuWidth = self.menuCardWidth(for: enabledProviders, menu: menu)
-        let currentProvider = selectedProvider ?? enabledProviders.first ?? .codex
+        let currentProvider = selectedProvider
         let tokenAccountDisplay = isOverviewSelected ? nil : self.tokenAccountMenuDisplay(for: currentProvider)
         let showAllTokenAccounts = tokenAccountDisplay?.showAll ?? false
         let openAIContext = self.openAIWebContext(
@@ -393,10 +405,11 @@ extension StatusItemController {
         let resolvedProviders = self.settings.resolvedMergedOverviewProviders(
             activeProviders: enabledProviders,
             maxVisibleProviders: Self.maxOverviewProviders)
-        let message = if resolvedProviders.isEmpty {
-            "No providers selected for Overview."
+        let message: String
+        if resolvedProviders.isEmpty {
+            message = "No providers selected for Overview."
         } else {
-            "No overview data available."
+            message = "No overview data available."
         }
         let item = NSMenuItem(title: message, action: nil, keyEquivalent: "")
         item.isEnabled = false
@@ -717,7 +730,7 @@ extension StatusItemController {
         self.menuRefreshTasks[key]?.cancel()
         self.menuRefreshTasks[key] = Task { @MainActor [weak self, weak menu] in
             guard let self, let menu else { return }
-            try? await Task.sleep(for: Self.menuOpenRefreshDelay)
+            try? await Task.sleep(nanoseconds: UInt64(Self.menuOpenRefreshDelay * 1_000_000_000))
             guard !Task.isCancelled else { return }
             guard self.openMenus[ObjectIdentifier(menu)] != nil else { return }
             guard !self.store.isRefreshing else { return }
@@ -993,35 +1006,24 @@ extension StatusItemController {
 
     private func selector(for action: MenuDescriptor.MenuAction) -> (Selector, Any?) {
         switch action {
-        case .installUpdate: (#selector(self.installUpdate), nil)
-        case .refresh: (#selector(self.refreshNow), nil)
-        case .refreshAugmentSession: (#selector(self.refreshAugmentSession), nil)
-        case .dashboard: (#selector(self.openDashboard), nil)
-        case .statusPage: (#selector(self.openStatusPage), nil)
-        case let .switchAccount(provider): (#selector(self.runSwitchAccount(_:)), provider.rawValue)
-        case let .openTerminal(command): (#selector(self.openTerminalCommand(_:)), command)
-        case let .loginToProvider(url): (#selector(self.openLoginToProvider(_:)), url)
-        case .settings: (#selector(self.showSettingsGeneral), nil)
-        case .about: (#selector(self.showSettingsAbout), nil)
-        case .quit: (#selector(self.quit), nil)
-        case let .copyError(message): (#selector(self.copyError(_:)), message)
+        case .installUpdate: return (#selector(self.installUpdate), nil)
+        case .refresh: return (#selector(self.refreshNow), nil)
+        case .refreshAugmentSession: return (#selector(self.refreshAugmentSession), nil)
+        case .dashboard: return (#selector(self.openDashboard), nil)
+        case .statusPage: return (#selector(self.openStatusPage), nil)
+        case let .switchAccount(provider): return (#selector(self.runSwitchAccount(_:)), provider.rawValue)
+        case let .openTerminal(command): return (#selector(self.openTerminalCommand(_:)), command)
+        case let .loginToProvider(url): return (#selector(self.openLoginToProvider(_:)), url)
+        case .settings: return (#selector(self.showSettingsGeneral), nil)
+        case .about: return (#selector(self.showSettingsAbout), nil)
+        case .quit: return (#selector(self.quit), nil)
+        case let .copyError(message): return (#selector(self.copyError(_:)), message)
         }
     }
 
     @MainActor
-    private protocol MenuCardHighlighting: AnyObject {
-        func setHighlighted(_ highlighted: Bool)
-    }
-
-    @MainActor
-    private protocol MenuCardMeasuring: AnyObject {
-        func measuredHeight(width: CGFloat) -> CGFloat
-    }
-
-    @MainActor
-    @Observable
-    fileprivate final class MenuCardHighlightState {
-        var isHighlighted = false
+    fileprivate final class MenuCardHighlightState: ObservableObject {
+        @Published var isHighlighted = false
     }
 
     private final class MenuHostingView<Content: View>: NSHostingView<Content> {
@@ -1089,7 +1091,7 @@ extension StatusItemController {
     }
 
     private struct MenuCardSectionContainerView<Content: View>: View {
-        @Bindable var highlightState: MenuCardHighlightState
+        @ObservedObject var highlightState: MenuCardHighlightState
         let showsSubmenuIndicator: Bool
         let content: Content
 
@@ -1233,21 +1235,25 @@ extension StatusItemController {
             return submenu
         }
 
-        let submenu = NSMenu()
-        submenu.delegate = self
-        let chartView = UsageBreakdownChartMenuView(breakdown: breakdown, width: width)
-        let hosting = MenuHostingView(rootView: chartView)
-        // Use NSHostingController for efficient size calculation without multiple layout passes
-        let controller = NSHostingController(rootView: chartView)
-        let size = controller.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
-        hosting.frame = NSRect(origin: .zero, size: NSSize(width: width, height: size.height))
+        if #available(macOS 13, *) {
+            let submenu = NSMenu()
+            submenu.delegate = self
+            let chartView = UsageBreakdownChartMenuView(breakdown: breakdown, width: width)
+            let hosting = MenuHostingView(rootView: chartView)
+            // Use NSHostingController for efficient size calculation without multiple layout passes
+            let controller = NSHostingController(rootView: chartView)
+            let size = controller.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
+            hosting.frame = NSRect(origin: .zero, size: NSSize(width: width, height: size.height))
 
-        let chartItem = NSMenuItem()
-        chartItem.view = hosting
-        chartItem.isEnabled = false
-        chartItem.representedObject = "usageBreakdownChart"
-        submenu.addItem(chartItem)
-        return submenu
+            let chartItem = NSMenuItem()
+            chartItem.view = hosting
+            chartItem.isEnabled = false
+            chartItem.representedObject = "usageBreakdownChart"
+            submenu.addItem(chartItem)
+            return submenu
+        } else {
+            return nil
+        }
     }
 
     private func makeCreditsHistorySubmenu() -> NSMenu? {
@@ -1265,21 +1271,25 @@ extension StatusItemController {
             return submenu
         }
 
-        let submenu = NSMenu()
-        submenu.delegate = self
-        let chartView = CreditsHistoryChartMenuView(breakdown: breakdown, width: width)
-        let hosting = MenuHostingView(rootView: chartView)
-        // Use NSHostingController for efficient size calculation without multiple layout passes
-        let controller = NSHostingController(rootView: chartView)
-        let size = controller.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
-        hosting.frame = NSRect(origin: .zero, size: NSSize(width: width, height: size.height))
+        if #available(macOS 13, *) {
+            let submenu = NSMenu()
+            submenu.delegate = self
+            let chartView = CreditsHistoryChartMenuView(breakdown: breakdown, width: width)
+            let hosting = MenuHostingView(rootView: chartView)
+            // Use NSHostingController for efficient size calculation without multiple layout passes
+            let controller = NSHostingController(rootView: chartView)
+            let size = controller.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
+            hosting.frame = NSRect(origin: .zero, size: NSSize(width: width, height: size.height))
 
-        let chartItem = NSMenuItem()
-        chartItem.view = hosting
-        chartItem.isEnabled = false
-        chartItem.representedObject = "creditsHistoryChart"
-        submenu.addItem(chartItem)
-        return submenu
+            let chartItem = NSMenuItem()
+            chartItem.view = hosting
+            chartItem.isEnabled = false
+            chartItem.representedObject = "creditsHistoryChart"
+            submenu.addItem(chartItem)
+            return submenu
+        } else {
+            return nil
+        }
     }
 
     private func makeCostHistorySubmenu(provider: UsageProvider) -> NSMenu? {
@@ -1298,25 +1308,29 @@ extension StatusItemController {
             return submenu
         }
 
-        let submenu = NSMenu()
-        submenu.delegate = self
-        let chartView = CostHistoryChartMenuView(
-            provider: provider,
-            daily: tokenSnapshot.daily,
-            totalCostUSD: tokenSnapshot.last30DaysCostUSD,
-            width: width)
-        let hosting = MenuHostingView(rootView: chartView)
-        // Use NSHostingController for efficient size calculation without multiple layout passes
-        let controller = NSHostingController(rootView: chartView)
-        let size = controller.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
-        hosting.frame = NSRect(origin: .zero, size: NSSize(width: width, height: size.height))
+        if #available(macOS 13, *) {
+            let submenu = NSMenu()
+            submenu.delegate = self
+            let chartView = CostHistoryChartMenuView(
+                provider: provider,
+                daily: tokenSnapshot.daily,
+                totalCostUSD: tokenSnapshot.last30DaysCostUSD,
+                width: width)
+            let hosting = MenuHostingView(rootView: chartView)
+            // Use NSHostingController for efficient size calculation without multiple layout passes
+            let controller = NSHostingController(rootView: chartView)
+            let size = controller.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
+            hosting.frame = NSRect(origin: .zero, size: NSSize(width: width, height: size.height))
 
-        let chartItem = NSMenuItem()
-        chartItem.view = hosting
-        chartItem.isEnabled = false
-        chartItem.representedObject = "costHistoryChart"
-        submenu.addItem(chartItem)
-        return submenu
+            let chartItem = NSMenuItem()
+            chartItem.view = hosting
+            chartItem.isEnabled = false
+            chartItem.representedObject = "costHistoryChart"
+            submenu.addItem(chartItem)
+            return submenu
+        } else {
+            return nil
+        }
     }
 
     private func isHostedSubviewMenu(_ menu: NSMenu) -> Bool {
@@ -1447,13 +1461,9 @@ extension StatusItemController {
     }
 
     private func applySubtitle(_ subtitle: String, to item: NSMenuItem, title: String) {
-        if #available(macOS 14.4, *) {
-            // NSMenuItem.subtitle is only available on macOS 14.4+.
-            item.subtitle = subtitle
-        } else {
-            item.view = self.makeMenuSubtitleView(title: title, subtitle: subtitle, isEnabled: item.isEnabled)
-            item.toolTip = "\(title) — \(subtitle)"
-        }
+        // Use custom view since NSMenuItem.subtitle requires macOS 14.4+
+        item.view = self.makeMenuSubtitleView(title: title, subtitle: subtitle, isEnabled: item.isEnabled)
+        item.toolTip = "\(title) — \(subtitle)"
     }
 
     private func makeMenuSubtitleView(title: String, subtitle: String, isEnabled: Bool) -> NSView {

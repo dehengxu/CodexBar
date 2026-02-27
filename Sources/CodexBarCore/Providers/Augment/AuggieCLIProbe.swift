@@ -163,11 +163,11 @@ public enum AuggieCLIError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .noOutput:
-            "Auggie CLI returned no output"
+            return "Auggie CLI returned no output"
         case .notAuthenticated:
-            "Not authenticated. Run 'auggie login' to authenticate."
+            return "Not authenticated. Run 'auggie login' to authenticate."
         case let .parseError(msg):
-            "Failed to parse auggie output: \(msg)"
+            return "Failed to parse auggie output: \(msg)"
         }
     }
 }

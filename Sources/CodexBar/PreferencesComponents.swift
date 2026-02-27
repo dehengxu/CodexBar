@@ -18,7 +18,7 @@ struct PreferenceToggleRow: View {
             if let subtitle, !subtitle.isEmpty {
                 Text(subtitle)
                     .font(.footnote)
-                    .foregroundStyle(.tertiary)
+                    .foregroundColor(Color(NSColor.tertiaryLabelColor))
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -53,7 +53,7 @@ struct SettingsSection<Content: View>: View {
             if let caption {
                 Text(caption)
                     .font(.footnote)
-                    .foregroundStyle(.tertiary)
+                    .foregroundColor(Color(NSColor.tertiaryLabelColor))
                     .fixedSize(horizontal: false, vertical: true)
             }
             VStack(alignment: .leading, spacing: self.contentSpacing) {

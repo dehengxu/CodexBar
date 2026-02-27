@@ -1,8 +1,7 @@
 import Foundation
-import Observation
+import Combine
 
 @MainActor
-@Observable
-final class PreferencesSelection {
-    var tab: PreferencesTab = .general
+final class PreferencesSelection: ObservableObject {
+    @Published var tab: PreferencesTab = .general
 }

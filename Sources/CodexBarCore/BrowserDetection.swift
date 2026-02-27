@@ -1,16 +1,15 @@
 import Foundation
 #if os(macOS)
-import os.lock
-import SweetCookieKit
 
 /// Browser presence + profile heuristics.
 ///
-/// Primary goal: avoid triggering unnecessary Keychain prompts (e.g. Chromium “Safe Storage”) by skipping
+/// Primary goal: avoid triggering unnecessary Keychain prompts (e.g. Chromium "Safe Storage") by skipping
 /// cookie imports from browsers that have no profile data on disk.
 public final class BrowserDetection: Sendable {
     public static let defaultCacheTTL: TimeInterval = 60 * 10
 
-    private let cache = OSAllocatedUnfairLock<[CacheKey: CachedResult]>(initialState: [:])
+    private let lock = NSLock()
+    private var cache: [CacheKey: CachedResult] = [:]
     private let homeDirectory: String
     private let cacheTTL: TimeInterval
     private let now: @Sendable () -> Date
@@ -55,8 +54,8 @@ public final class BrowserDetection: Sendable {
             return true
         }
 
-        return self.cachedBool(browser: browser, kind: .appInstalled) {
-            self.detectAppInstalled(for: browser)
+        return cachedBool(browser: browser, kind: .appInstalled) {
+            detectAppInstalled(for: browser)
         }
     }
 
@@ -72,29 +71,29 @@ public final class BrowserDetection: Sendable {
         }
 
         // For browsers that typically require keychain-backed decryption, ensure an actual cookie store exists.
-        if self.requiresProfileValidation(browser) {
-            return self.hasUsableCookieStore(browser)
+        if requiresProfileValidation(browser) {
+            return hasUsableCookieStore(browser)
         }
 
-        return self.hasUsableProfileData(browser)
+        return hasUsableProfileData(browser)
     }
 
     public func hasUsableProfileData(_ browser: Browser) -> Bool {
-        self.cachedBool(browser: browser, kind: .usableProfileData) {
-            self.detectUsableProfileData(for: browser)
+        cachedBool(browser: browser, kind: .usableProfileData) {
+            detectUsableProfileData(for: browser)
         }
     }
 
     private func hasUsableCookieStore(_ browser: Browser) -> Bool {
-        self.cachedBool(browser: browser, kind: .usableCookieStore) {
-            self.detectUsableCookieStore(for: browser)
+        cachedBool(browser: browser, kind: .usableCookieStore) {
+            detectUsableCookieStore(for: browser)
         }
     }
 
     public func clearCache() {
-        self.cache.withLock { cache in
-            cache.removeAll()
-        }
+        lock.lock()
+        cache.removeAll()
+        lock.unlock()
     }
 
     // MARK: - Detection Logic
@@ -102,16 +101,19 @@ public final class BrowserDetection: Sendable {
     private func cachedBool(browser: Browser, kind: ProbeKind, compute: () -> Bool) -> Bool {
         let now = self.now()
         let key = CacheKey(browser: browser, kind: kind)
-        if let cached = self.cache.withLock({ cache in cache[key] }) {
-            if now.timeIntervalSince(cached.timestamp) < self.cacheTTL {
+        lock.lock()
+        if let cached = cache[key] {
+            if now.timeIntervalSince(cached.timestamp) < cacheTTL {
+                lock.unlock()
                 return cached.value
             }
         }
+        lock.unlock()
 
         let result = compute()
-        self.cache.withLock { cache in
-            cache[key] = CachedResult(value: result, timestamp: now)
-        }
+        lock.lock()
+        cache[key] = CachedResult(value: result, timestamp: now)
+        lock.unlock()
         return result
     }
 

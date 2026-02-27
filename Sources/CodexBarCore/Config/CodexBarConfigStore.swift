@@ -8,11 +8,11 @@ public enum CodexBarConfigStoreError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .invalidURL:
-            "Invalid CodexBar config path."
+            return "Invalid CodexBar config path."
         case let .decodeFailed(details):
-            "Failed to decode CodexBar config: \(details)"
+            return "Failed to decode CodexBar config: \(details)"
         case let .encodeFailed(details):
-            "Failed to encode CodexBar config: \(details)"
+            return "Failed to encode CodexBar config: \(details)"
         }
     }
 }

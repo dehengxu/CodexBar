@@ -1,5 +1,4 @@
 import Foundation
-import SweetCookieKit
 
 #if os(macOS)
 
@@ -402,13 +401,13 @@ public enum FactoryStatusProbeError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .notLoggedIn:
-            "Not logged in to Factory. Please log in via the CodexBar menu."
+            return "Not logged in to Factory. Please log in via the CodexBar menu."
         case let .networkError(msg):
-            "Factory API error: \(msg)"
+            return "Factory API error: \(msg)"
         case let .parseFailed(msg):
-            "Could not parse Factory usage: \(msg)"
+            return "Could not parse Factory usage: \(msg)"
         case .noSessionCookie:
-            "No Factory session found. Please log in to app.factory.ai in \(factoryCookieImportOrder.loginHint)."
+            return "No Factory session found. Please log in to app.factory.ai in \(factoryCookieImportOrder.loginHint)."
         }
     }
 }

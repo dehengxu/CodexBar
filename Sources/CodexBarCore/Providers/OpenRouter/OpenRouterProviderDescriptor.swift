@@ -1,9 +1,8 @@
-import CodexBarMacroSupport
 import Foundation
 
-@ProviderDescriptorRegistration
-@ProviderDescriptorDefinition
 public enum OpenRouterProviderDescriptor {
+    static let descriptor = OpenRouterProviderDescriptor.makeDescriptor()
+
     static func makeDescriptor() -> ProviderDescriptor {
         ProviderDescriptor(
             id: .openrouter,
@@ -77,7 +76,7 @@ public enum OpenRouterSettingsError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .missingToken:
-            "OpenRouter API token not configured. Set OPENROUTER_API_KEY environment variable or configure in Settings."
+            return "OpenRouter API token not configured. Set OPENROUTER_API_KEY environment variable or configure in Settings."
         }
     }
 }

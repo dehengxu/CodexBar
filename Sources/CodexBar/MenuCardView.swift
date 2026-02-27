@@ -11,15 +11,15 @@ struct UsageMenuCardView: View {
 
             var labelSuffix: String {
                 switch self {
-                case .left: "left"
-                case .used: "used"
+                case .left: return "left"
+                case .used: return "used"
                 }
             }
 
             var accessibilityLabel: String {
                 switch self {
-                case .left: "Usage remaining"
-                case .used: "Usage used"
+                case .left: return "Usage remaining"
+                case .used: return "Usage used"
                 }
             }
         }
@@ -234,9 +234,9 @@ private struct UsageMenuCardHeaderView: View {
 
     private var subtitleColor: Color {
         switch self.model.subtitleStyle {
-        case .info: MenuHighlightStyle.secondary(self.isHighlighted)
-        case .loading: MenuHighlightStyle.secondary(self.isHighlighted)
-        case .error: MenuHighlightStyle.error(self.isHighlighted)
+        case .info: return MenuHighlightStyle.secondary(self.isHighlighted)
+        case .loading: return MenuHighlightStyle.secondary(self.isHighlighted)
+        case .error: return MenuHighlightStyle.error(self.isHighlighted)
         }
     }
 }
@@ -271,7 +271,7 @@ private struct CopyIconButton: View {
             }
             self.resetTask?.cancel()
             self.resetTask = Task { @MainActor in
-                try? await Task.sleep(for: .seconds(0.9))
+                try? await Task.sleep(nanoseconds: 900 * 1_000_000) // 0.9 seconds
                 withAnimation(.easeOut(duration: 0.2)) {
                     self.didCopy = false
                 }
@@ -644,17 +644,19 @@ extension UsageMenuCardView.Model {
             metadata: input.metadata)
         let metrics = Self.metrics(input: input)
         let usageNotes = Self.usageNotes(provider: input.provider, snapshot: input.snapshot)
-        let creditsText: String? = if input.provider == .openrouter {
-            nil
+        let creditsText: String?
+        if input.provider == .openrouter {
+            creditsText = nil
         } else if input.provider == .codex, !input.showOptionalCreditsAndExtraUsage {
-            nil
+            creditsText = nil
         } else {
-            Self.creditsLine(metadata: input.metadata, credits: input.credits, error: input.creditsError)
+            creditsText = Self.creditsLine(metadata: input.metadata, credits: input.credits, error: input.creditsError)
         }
-        let providerCost: ProviderCostSection? = if input.provider == .claude, !input.showOptionalCreditsAndExtraUsage {
-            nil
+        let providerCost: ProviderCostSection?
+        if input.provider == .claude, !input.showOptionalCreditsAndExtraUsage {
+            providerCost = nil
         } else {
-            Self.providerCostSection(provider: input.provider, cost: input.snapshot?.providerCost)
+            providerCost = Self.providerCostSection(provider: input.provider, cost: input.snapshot?.providerCost)
         }
         let tokenUsage = Self.tokenUsageSection(
             provider: input.provider,
@@ -946,7 +948,12 @@ extension UsageMenuCardView.Model {
         let actualPercent = showUsed ? actualUsed : (100 - actualUsed)
         if expectedPercent.isFinite == false || actualPercent.isFinite == false { return nil }
         let paceOnTop = actualUsed <= expectedUsed
-        let pacePercent: Double? = if detail.stage == .onTrack { nil } else { expectedPercent }
+        let pacePercent: Double?
+        if detail.stage == .onTrack {
+            pacePercent = nil
+        } else {
+            pacePercent = expectedPercent
+        }
         return PaceDetail(
             leftLabel: detail.leftLabel,
             rightLabel: detail.rightLabel,

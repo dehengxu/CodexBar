@@ -9,7 +9,7 @@ enum SystemSettingsLinks {
             URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"),
             URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy"),
             URL(string: "x-apple.systempreferences:com.apple.preference.security"),
-        ].compactMap(\.self)
+        ].compactMap { $0 }
 
         for url in urls where NSWorkspace.shared.open(url) {
             return

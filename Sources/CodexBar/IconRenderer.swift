@@ -802,12 +802,12 @@ enum IconRenderer {
 
     private static func indicatorKey(_ indicator: ProviderStatusIndicator) -> Int {
         switch indicator {
-        case .none: 0
-        case .minor: 1
-        case .major: 2
-        case .critical: 3
-        case .maintenance: 4
-        case .unknown: 5
+        case .none: return 0
+        case .minor: return 1
+        case .major: return 2
+        case .critical: return 3
+        case .maintenance: return 4
+        case .unknown: return 5
         }
     }
 

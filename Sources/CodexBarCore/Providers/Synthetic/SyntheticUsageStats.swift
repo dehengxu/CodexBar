@@ -502,13 +502,13 @@ public enum SyntheticUsageError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .invalidCredentials:
-            "Invalid Synthetic API credentials"
+            return "Invalid Synthetic API credentials"
         case let .networkError(message):
-            "Synthetic network error: \(message)"
+            return "Synthetic network error: \(message)"
         case let .apiError(message):
-            "Synthetic API error: \(message)"
+            return "Synthetic API error: \(message)"
         case let .parseFailed(message):
-            "Failed to parse Synthetic response: \(message)"
+            return "Failed to parse Synthetic response: \(message)"
         }
     }
 }

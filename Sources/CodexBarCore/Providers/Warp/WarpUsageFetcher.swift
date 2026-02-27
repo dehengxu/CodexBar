@@ -39,18 +39,21 @@ public struct WarpUsageSnapshot: Sendable {
     }
 
     public func toUsageSnapshot() -> UsageSnapshot {
-        let usedPercent: Double = if self.isUnlimited {
-            0
-        } else if self.requestLimit > 0 {
-            min(100, max(0, Double(self.requestsUsed) / Double(self.requestLimit) * 100))
-        } else {
-            0
-        }
+        let usedPercent: Double = {
+            if self.isUnlimited {
+                return 0
+            } else if self.requestLimit > 0 {
+                return min(100, max(0, Double(self.requestsUsed) / Double(self.requestLimit) * 100))
+            } else {
+                return 0
+            }
+        }()
 
-        let resetDescription: String? = if self.isUnlimited {
-            "Unlimited"
+        let resetDescription: String?
+        if self.isUnlimited {
+            resetDescription = "Unlimited"
         } else {
-            "\(self.requestsUsed)/\(self.requestLimit) credits"
+            resetDescription = "\(self.requestsUsed)/\(self.requestLimit) credits"
         }
 
         let primary = RateWindow(
@@ -116,13 +119,13 @@ public enum WarpUsageError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .missingCredentials:
-            "Missing Warp API key."
+            return "Missing Warp API key."
         case let .networkError(message):
-            "Warp network error: \(message)"
+            return "Warp network error: \(message)"
         case let .apiError(code, message):
-            "Warp API error (\(code)): \(message)"
+            return "Warp API error (\(code)): \(message)"
         case let .parseFailed(message):
-            "Failed to parse Warp response: \(message)"
+            return "Failed to parse Warp response: \(message)"
         }
     }
 }

@@ -1,9 +1,7 @@
-import CodexBarMacroSupport
 import Foundation
 
-@ProviderDescriptorRegistration
-@ProviderDescriptorDefinition
 public enum ZaiProviderDescriptor {
+    static let descriptor = ZaiProviderDescriptor.makeDescriptor()
     static func makeDescriptor() -> ProviderDescriptor {
         ProviderDescriptor(
             id: .zai,

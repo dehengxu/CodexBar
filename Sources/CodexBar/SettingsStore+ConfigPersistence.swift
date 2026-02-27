@@ -26,9 +26,9 @@ private struct ConfigChangeContext {
     var shouldBroadcast: Bool {
         switch self.origin {
         case .localUser:
-            true
+            return true
         case .externalSync, .reload:
-            false
+            return false
         }
     }
 }

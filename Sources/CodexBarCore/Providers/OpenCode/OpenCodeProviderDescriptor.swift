@@ -1,9 +1,7 @@
-import CodexBarMacroSupport
 import Foundation
 
-@ProviderDescriptorRegistration
-@ProviderDescriptorDefinition
 public enum OpenCodeProviderDescriptor {
+    static let descriptor = OpenCodeProviderDescriptor.makeDescriptor()
     static func makeDescriptor() -> ProviderDescriptor {
         ProviderDescriptor(
             id: .opencode,
@@ -123,9 +121,9 @@ enum OpenCodeSettingsError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingCookie:
-            "No OpenCode session cookies found in browsers."
+            return "No OpenCode session cookies found in browsers."
         case .invalidCookie:
-            "OpenCode cookie header is invalid."
+            return "OpenCode cookie header is invalid."
         }
     }
 }

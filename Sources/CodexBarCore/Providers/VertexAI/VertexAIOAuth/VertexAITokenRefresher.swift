@@ -15,13 +15,13 @@ public enum VertexAITokenRefresher {
         public var errorDescription: String? {
             switch self {
             case .expired:
-                "Refresh token expired. Run `gcloud auth application-default login` again."
+                return "Refresh token expired. Run `gcloud auth application-default login` again."
             case .revoked:
-                "Refresh token was revoked. Run `gcloud auth application-default login` again."
+                return "Refresh token was revoked. Run `gcloud auth application-default login` again."
             case let .networkError(error):
-                "Network error during token refresh: \(error.localizedDescription)"
+                return "Network error during token refresh: \(error.localizedDescription)"
             case let .invalidResponse(message):
-                "Invalid refresh response: \(message)"
+                return "Invalid refresh response: \(message)"
             }
         }
     }

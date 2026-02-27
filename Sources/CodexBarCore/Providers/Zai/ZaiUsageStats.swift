@@ -76,11 +76,12 @@ extension ZaiLimitEntry {
 
     public var windowDescription: String? {
         guard self.number > 0 else { return nil }
-        let unitLabel: String? = switch self.unit {
-        case .minutes: "minute"
-        case .hours: "hour"
-        case .days: "day"
-        case .unknown: nil
+        let unitLabel: String?
+        switch self.unit {
+        case .minutes: unitLabel = "minute"
+        case .hours: unitLabel = "hour"
+        case .days: unitLabel = "day"
+        case .unknown: unitLabel = nil
         }
         guard let unitLabel else { return nil }
         let suffix = self.number == 1 ? unitLabel : "\(unitLabel)s"
@@ -218,7 +219,7 @@ private struct ZaiQuotaLimitData: Decodable {
             container.decodeIfPresent(String.self, forKey: .plan),
             container.decodeIfPresent(String.self, forKey: .planType),
             container.decodeIfPresent(String.self, forKey: .packageName),
-        ].compactMap(\.self).first
+        ].compactMap { $0 }.first
         let trimmed = rawPlan?.trimmingCharacters(in: .whitespacesAndNewlines)
         self.planName = (trimmed?.isEmpty ?? true) ? nil : trimmed
     }
@@ -412,13 +413,13 @@ public enum ZaiUsageError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .invalidCredentials:
-            "Invalid z.ai API credentials"
+            return "Invalid z.ai API credentials"
         case let .networkError(message):
-            "z.ai network error: \(message)"
+            return "z.ai network error: \(message)"
         case let .apiError(message):
-            "z.ai API error: \(message)"
+            return "z.ai API error: \(message)"
         case let .parseFailed(message):
-            "Failed to parse z.ai response: \(message)"
+            return "Failed to parse z.ai response: \(message)"
         }
     }
 }

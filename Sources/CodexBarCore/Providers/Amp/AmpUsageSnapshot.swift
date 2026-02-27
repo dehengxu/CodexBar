@@ -26,16 +26,18 @@ extension AmpUsageSnapshot {
     public func toUsageSnapshot(now: Date = Date()) -> UsageSnapshot {
         let quota = max(0, self.freeQuota)
         let used = max(0, self.freeUsed)
-        let percent: Double = if quota > 0 {
-            min(100, (used / quota) * 100)
+        let percent: Double
+        if quota > 0 {
+            percent = min(100, (used / quota) * 100)
         } else {
-            0
+            percent = 0
         }
 
-        let windowMinutes: Int? = if let hours = self.windowHours, hours > 0 {
-            Int((hours * 60).rounded())
+        let windowMinutes: Int?
+        if let hours = self.windowHours, hours > 0 {
+            windowMinutes = Int((hours * 60).rounded())
         } else {
-            nil
+            windowMinutes = nil
         }
 
         let resetsAt: Date? = {

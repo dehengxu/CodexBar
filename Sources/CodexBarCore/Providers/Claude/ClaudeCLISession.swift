@@ -17,10 +17,10 @@ actor ClaudeCLISession {
 
         var errorDescription: String? {
             switch self {
-            case let .launchFailed(msg): "Failed to launch Claude CLI session: \(msg)"
-            case let .ioFailed(msg): "Claude CLI PTY I/O failed: \(msg)"
-            case .timedOut: "Claude CLI session timed out."
-            case .processExited: "Claude CLI session exited."
+            case let .launchFailed(msg): return "Failed to launch Claude CLI session: \(msg)"
+            case let .ioFailed(msg): return "Claude CLI PTY I/O failed: \(msg)"
+            case .timedOut: return "Claude CLI session timed out."
+            case .processExited: return "Claude CLI session exited."
             }
         }
     }

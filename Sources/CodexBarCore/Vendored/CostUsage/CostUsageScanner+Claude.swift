@@ -155,11 +155,11 @@ extension CostUsageScanner {
     {
         switch filter {
         case .all:
-            true
+            return true
         case .vertexAIOnly:
-            self.isVertexAIUsageEntry(obj: obj)
+            return self.isVertexAIUsageEntry(obj: obj)
         case .excludeVertexAI:
-            !self.isVertexAIUsageEntry(obj: obj)
+            return !self.isVertexAIUsageEntry(obj: obj)
         }
     }
 

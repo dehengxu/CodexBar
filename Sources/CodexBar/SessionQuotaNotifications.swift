@@ -40,13 +40,18 @@ final class SessionQuotaNotifier {
 
         let providerName = ProviderDescriptorRegistry.descriptor(for: provider).metadata.displayName
 
-        let (title, body) = switch transition {
+        let title: String
+        let body: String
+        switch transition {
         case .none:
-            ("", "")
+            title = ""
+            body = ""
         case .depleted:
-            ("\(providerName) session depleted", "0% left. Will notify when it's available again.")
+            title = "\(providerName) session depleted"
+            body = "0% left. Will notify when it's available again."
         case .restored:
-            ("\(providerName) session restored", "Session quota is available again.")
+            title = "\(providerName) session restored"
+            body = "Session quota is available again."
         }
 
         let providerText = provider.rawValue

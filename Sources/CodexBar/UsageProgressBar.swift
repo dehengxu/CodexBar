@@ -90,13 +90,16 @@ struct UsageProgressBar: View {
             let rect = CGRect(origin: .zero, size: size)
             let scale = max(self.displayScale, 1)
             let stripes = Self.paceStripePaths(size: size, scale: scale)
-            let stripeColor: Color = if self.isHighlighted {
-                .white
-            } else if useDeficitRed {
-                .red
-            } else {
-                .green
-            }
+
+            let stripeColor: Color = {
+                if self.isHighlighted {
+                    return .white
+                } else if useDeficitRed {
+                    return .red
+                } else {
+                    return .green
+                }
+            }()
 
             ZStack {
                 Canvas { context, _ in

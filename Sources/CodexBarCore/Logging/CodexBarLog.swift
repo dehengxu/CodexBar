@@ -22,37 +22,35 @@ public enum CodexBarLog {
 
         public var displayName: String {
             switch self {
-            case .trace: "Trace"
-            case .verbose: "Verbose"
-            case .debug: "Debug"
-            case .info: "Info"
-            case .warning: "Warning"
-            case .error: "Error"
-            case .critical: "Critical"
+            case .trace: return "Trace"
+            case .verbose: return "Verbose"
+            case .debug: return "Debug"
+            case .info: return "Info"
+            case .warning: return "Warning"
+            case .error: return "Error"
+            case .critical: return "Critical"
             }
         }
 
         public var rank: Int {
             switch self {
-            case .trace: 0
-            case .verbose: 1
-            case .debug: 2
-            case .info: 3
-            case .warning: 4
-            case .error: 5
-            case .critical: 6
+            case .trace: return 0
+            case .verbose: return 1
+            case .debug: return 2
+            case .info: return 3
+            case .warning: return 4
+            case .error: return 5
+            case .critical: return 6
             }
         }
 
         public var asSwiftLogLevel: Logger.Level {
             switch self {
-            case .trace: .trace
-            case .verbose: .debug
-            case .debug: .debug
-            case .info: .info
-            case .warning: .warning
-            case .error: .error
-            case .critical: .critical
+            case .trace, .verbose, .debug: return .debug
+            case .info: return .info
+            case .warning: return .warning
+            case .error: return .error
+            case .critical: return .critical
             }
         }
     }
@@ -71,8 +69,8 @@ public enum CodexBarLog {
 
     private static let lock = NSLock()
     private static let levelLock = NSLock()
-    private nonisolated(unsafe) static var isBootstrapped = false
-    private nonisolated(unsafe) static var currentLevel: Level = .info
+    private static var isBootstrapped = false
+    private static var currentLevel: Level = .info
 
     public static func bootstrapIfNeeded(_ config: Configuration) {
         self.lock.lock()

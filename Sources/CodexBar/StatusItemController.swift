@@ -1,6 +1,6 @@
 import AppKit
 import CodexBarCore
-import Observation
+import Combine
 import QuartzCore
 import SwiftUI
 
@@ -197,43 +197,40 @@ final class StatusItemController: NSObject, NSMenuDelegate, StatusItemControllin
         self.observeUpdaterChanges()
     }
 
+    private var cancellables = Set<AnyCancellable>()
+
     private func observeStoreChanges() {
-        withObservationTracking {
-            _ = self.store.menuObservationToken
-        } onChange: { [weak self] in
-            Task { @MainActor [weak self] in
+        // Use Combine Timer to periodically check for changes
+        Timer.publish(every: 1.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
                 guard let self else { return }
-                self.observeStoreChanges()
                 self.invalidateMenus()
                 self.updateIcons()
                 self.updateBlinkingState()
             }
-        }
+            .store(in: &self.cancellables)
     }
 
     private func observeDebugForceAnimation() {
-        withObservationTracking {
-            _ = self.store.debugForceAnimation
-        } onChange: { [weak self] in
-            Task { @MainActor [weak self] in
+        Timer.publish(every: 0.5, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
                 guard let self else { return }
-                self.observeDebugForceAnimation()
                 self.updateVisibility()
                 self.updateBlinkingState()
             }
-        }
+            .store(in: &self.cancellables)
     }
 
     private func observeSettingsChanges() {
-        withObservationTracking {
-            _ = self.settings.menuObservationToken
-        } onChange: { [weak self] in
-            Task { @MainActor [weak self] in
+        Timer.publish(every: 1.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
                 guard let self else { return }
-                self.observeSettingsChanges()
                 self.handleSettingsChange(reason: "observation")
             }
-        }
+            .store(in: &self.cancellables)
     }
 
     func handleProviderConfigChange(reason: String) {
@@ -255,15 +252,13 @@ final class StatusItemController: NSObject, NSMenuDelegate, StatusItemControllin
     }
 
     private func observeUpdaterChanges() {
-        withObservationTracking {
-            _ = self.updater.updateStatus.isUpdateReady
-        } onChange: { [weak self] in
-            Task { @MainActor [weak self] in
+        Timer.publish(every: 1.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
                 guard let self else { return }
-                self.observeUpdaterChanges()
                 self.invalidateMenus()
             }
-        }
+            .store(in: &self.cancellables)
     }
 
     private func invalidateMenus() {

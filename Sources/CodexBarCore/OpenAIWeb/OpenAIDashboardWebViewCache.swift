@@ -168,9 +168,7 @@ final class OpenAIDashboardWebViewCache {
     private func makeWebView(websiteDataStore: WKWebsiteDataStore) -> (WKWebView, OffscreenWebViewHost) {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = websiteDataStore
-        if #available(macOS 14.0, *) {
-            config.preferences.inactiveSchedulingPolicy = .suspend
-        }
+        // Note: inactiveSchedulingPolicy requires macOS 14.4+, omitted for broader compatibility
 
         let webView = WKWebView(frame: .zero, configuration: config)
         let host = OffscreenWebViewHost(webView: webView)

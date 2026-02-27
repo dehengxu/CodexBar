@@ -43,13 +43,13 @@ public enum VertexAIOAuthCredentialsError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .notFound:
-            "gcloud credentials not found. Run `gcloud auth application-default login` to authenticate."
+            return "gcloud credentials not found. Run `gcloud auth application-default login` to authenticate."
         case let .decodeFailed(message):
-            "Failed to decode gcloud credentials: \(message)"
+            return "Failed to decode gcloud credentials: \(message)"
         case .missingTokens:
-            "gcloud credentials exist but contain no tokens."
+            return "gcloud credentials exist but contain no tokens."
         case .missingClientCredentials:
-            "gcloud credentials missing client ID or secret."
+            return "gcloud credentials missing client ID or secret."
         }
     }
 }

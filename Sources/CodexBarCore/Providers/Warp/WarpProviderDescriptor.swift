@@ -1,9 +1,7 @@
-import CodexBarMacroSupport
 import Foundation
 
-@ProviderDescriptorRegistration
-@ProviderDescriptorDefinition
 public enum WarpProviderDescriptor {
+    static let descriptor = WarpProviderDescriptor.makeDescriptor()
     static func makeDescriptor() -> ProviderDescriptor {
         ProviderDescriptor(
             id: .warp,

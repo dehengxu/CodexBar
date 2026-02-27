@@ -14,9 +14,9 @@ enum CookieHeaderStoreError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .keychainStatus(status):
-            "Keychain error: \(status)"
+            return "Keychain error: \(status)"
         case .invalidData:
-            "Keychain returned invalid data."
+            return "Keychain returned invalid data."
         }
     }
 }
@@ -29,7 +29,7 @@ struct KeychainCookieHeaderStore: CookieHeaderStoring {
     private let promptKind: KeychainPromptContext.Kind
 
     // Cache to reduce keychain access frequency
-    private nonisolated(unsafe) static var cache: [String: CachedValue] = [:]
+    private static var cache: [String: CachedValue] = [:]
     private static let cacheLock = NSLock()
     private static let cacheTTL: TimeInterval = 1800 // 30 minutes
 

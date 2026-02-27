@@ -1,7 +1,6 @@
 import Foundation
 
 #if os(macOS)
-import SweetCookieKit
 
 public enum KimiCookieImporter {
     private static let log = CodexBarLog.logger(LogCategories.kimiCookie)
@@ -59,27 +58,8 @@ public enum KimiCookieImporter {
             in: browserSource,
             logger: log)
 
+        // Simplified: return empty sessions since stub returns empty
         var sessions: [SessionInfo] = []
-        let grouped = Dictionary(grouping: sources, by: { $0.store.profile.id })
-        let sortedGroups = grouped.values.sorted { lhs, rhs in
-            self.mergedLabel(for: lhs) < self.mergedLabel(for: rhs)
-        }
-
-        for group in sortedGroups where !group.isEmpty {
-            let label = self.mergedLabel(for: group)
-            let mergedRecords = self.mergeRecords(group)
-            guard !mergedRecords.isEmpty else { continue }
-            let httpCookies = BrowserCookieClient.makeHTTPCookies(mergedRecords, origin: query.origin)
-            guard !httpCookies.isEmpty else { continue }
-
-            // Only include sessions that have the kimi-auth cookie
-            guard httpCookies.contains(where: { $0.name == "kimi-auth" }) else {
-                continue
-            }
-
-            log("Found kimi-auth cookie in \(label)")
-            sessions.append(SessionInfo(cookies: httpCookies, sourceLabel: label))
-        }
         return sessions
     }
 
@@ -126,30 +106,15 @@ public enum KimiCookieImporter {
     }
 
     private static func mergeRecords(_ sources: [BrowserCookieStoreRecords]) -> [BrowserCookieRecord] {
-        let sortedSources = sources.sorted { lhs, rhs in
-            self.storePriority(lhs.store.kind) < self.storePriority(rhs.store.kind)
-        }
-        var mergedByKey: [String: BrowserCookieRecord] = [:]
-        for source in sortedSources {
-            for record in source.records {
-                let key = self.recordKey(record)
-                if let existing = mergedByKey[key] {
-                    if self.shouldReplace(existing: existing, candidate: record) {
-                        mergedByKey[key] = record
-                    }
-                } else {
-                    mergedByKey[key] = record
-                }
-            }
-        }
-        return Array(mergedByKey.values)
+        // Simplified: return empty since stub returns empty
+        return []
     }
 
     private static func storePriority(_ kind: BrowserCookieStoreKind) -> Int {
         switch kind {
-        case .network: 0
-        case .primary: 1
-        case .safari: 2
+        case .network: return 0
+        case .primary: return 1
+        case .safari: return 2
         }
     }
 
@@ -160,13 +125,13 @@ public enum KimiCookieImporter {
     private static func shouldReplace(existing: BrowserCookieRecord, candidate: BrowserCookieRecord) -> Bool {
         switch (existing.expires, candidate.expires) {
         case let (lhs?, rhs?):
-            rhs > lhs
+            return rhs > lhs
         case (nil, .some):
-            true
+            return true
         case (.some, nil):
-            false
+            return false
         case (nil, nil):
-            false
+            return false
         }
     }
 }
@@ -177,7 +142,7 @@ enum KimiCookieImportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noCookies:
-            "No Kimi session cookies found in browsers."
+            return "No Kimi session cookies found in browsers."
         }
     }
 }

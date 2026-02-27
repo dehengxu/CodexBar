@@ -1,9 +1,7 @@
-import CodexBarMacroSupport
 import Foundation
 
-@ProviderDescriptorRegistration
-@ProviderDescriptorDefinition
 public enum KimiK2ProviderDescriptor {
+    static let descriptor = KimiK2ProviderDescriptor.makeDescriptor()
     static func makeDescriptor() -> ProviderDescriptor {
         ProviderDescriptor(
             id: .kimik2,

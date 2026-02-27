@@ -1,17 +1,14 @@
 import AppKit
+import Combine
 import CoreVideo
-import Observation
 import QuartzCore
 
-/// Minimal display link driver using NSScreen.displayLink on macOS 15+,
-/// and CVDisplayLink on macOS 14.
+/// Minimal display link driver using CVDisplayLink.
 /// Publishes ticks on the main thread at the requested frame rate.
 @MainActor
-@Observable
-final class DisplayLinkDriver {
+final class DisplayLinkDriver: ObservableObject {
     // Published counter used to drive SwiftUI updates.
-    var tick: Int = 0
-    private var displayLink: CADisplayLink?
+    @Published var tick: Int = 0
     private var cvDisplayLink: CVDisplayLink?
     private var targetInterval: CFTimeInterval = 1.0 / 60.0
     private var lastTickTimestamp: CFTimeInterval = 0
@@ -22,36 +19,18 @@ final class DisplayLinkDriver {
     }
 
     func start(fps: Double = 12) {
-        guard self.displayLink == nil, self.cvDisplayLink == nil else { return }
+        guard self.cvDisplayLink == nil else { return }
         let clampedFps = max(fps, 1)
         self.targetInterval = 1.0 / clampedFps
         self.lastTickTimestamp = 0
-        if #available(macOS 15, *), let screen = NSScreen.main {
-            // NSScreen.displayLink is macOS 15+ only.
-            let displayLink = screen.displayLink(target: self, selector: #selector(self.step))
-            let rate = Float(clampedFps)
-            displayLink.preferredFrameRateRange = CAFrameRateRange(
-                minimum: rate,
-                maximum: rate,
-                preferred: rate)
-            displayLink.add(to: .main, forMode: .common)
-            self.displayLink = displayLink
-        } else {
-            self.startCVDisplayLink()
-        }
+        self.startCVDisplayLink()
     }
 
     func stop() {
-        self.displayLink?.invalidate()
-        self.displayLink = nil
         if let cvDisplayLink = self.cvDisplayLink {
             CVDisplayLinkStop(cvDisplayLink)
         }
         self.cvDisplayLink = nil
-    }
-
-    @objc private func step(_: AnyObject) {
-        self.handleTick()
     }
 
     private func handleTick() {

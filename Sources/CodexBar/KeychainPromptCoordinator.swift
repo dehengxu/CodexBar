@@ -1,6 +1,5 @@
 import AppKit
 import CodexBarCore
-import SweetCookieKit
 
 enum KeychainPromptCoordinator {
     private static let promptLock = NSLock()
@@ -10,9 +9,7 @@ enum KeychainPromptCoordinator {
         KeychainPromptHandler.handler = { context in
             self.presentKeychainPrompt(context)
         }
-        BrowserCookieKeychainPromptHandler.handler = { context in
-            self.presentBrowserCookiePrompt(context)
-        }
+        // BrowserCookieKeychainPromptHandler assignment skipped for Swift 5.7 compatibility
     }
 
     private static func presentKeychainPrompt(_ context: KeychainPromptContext) {
@@ -117,13 +114,13 @@ enum KeychainPromptCoordinator {
         defer { self.promptLock.unlock() }
 
         if Thread.isMainThread {
-            MainActor.assumeIsolated {
+            Task { @MainActor in
                 self.showAlert(title: title, message: message)
             }
             return
         }
         DispatchQueue.main.sync {
-            MainActor.assumeIsolated {
+            Task { @MainActor in
                 self.showAlert(title: title, message: message)
             }
         }

@@ -4,7 +4,6 @@ import FoundationNetworking
 #endif
 
 #if os(macOS)
-import SweetCookieKit
 #endif
 
 private let ollamaSessionCookieNames: Set<String> = [
@@ -38,15 +37,15 @@ public enum OllamaUsageError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .notLoggedIn:
-            "Not logged in to Ollama. Please log in via ollama.com/settings."
+            return "Not logged in to Ollama. Please log in via ollama.com/settings."
         case .invalidCredentials:
-            "Ollama session cookie expired. Please log in again."
+            return "Ollama session cookie expired. Please log in again."
         case let .parseFailed(message):
-            "Could not parse Ollama usage: \(message)"
+            return "Could not parse Ollama usage: \(message)"
         case let .networkError(message):
-            "Ollama request failed: \(message)"
+            return "Ollama request failed: \(message)"
         case .noSessionCookie:
-            "No Ollama session cookie found. Please log in to ollama.com in your browser."
+            return "No Ollama session cookie found. Please log in to ollama.com in your browser."
         }
     }
 }
@@ -274,11 +273,11 @@ public struct OllamaUsageFetcher: Sendable {
     static func shouldRetryWithNextCookieCandidate(after error: Error) -> Bool {
         switch error {
         case OllamaUsageError.invalidCredentials, OllamaUsageError.notLoggedIn:
-            true
+            return true
         case RetryableParseFailure.missingUsageData:
-            true
+            return true
         default:
-            false
+            return false
         }
     }
 
@@ -349,9 +348,9 @@ public struct OllamaUsageFetcher: Sendable {
     private static func surfacedError(from error: Error) -> Error {
         switch error {
         case RetryableParseFailure.missingUsageData:
-            OllamaUsageError.parseFailed("Missing Ollama usage data.")
+            return OllamaUsageError.parseFailed("Missing Ollama usage data.")
         default:
-            error
+            return error
         }
     }
 

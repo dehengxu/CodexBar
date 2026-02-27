@@ -1,8 +1,6 @@
 import CodexBarCore
-import CodexBarMacroSupport
 import SwiftUI
 
-@ProviderImplementationRegistration
 struct ClaudeProviderImplementation: ProviderImplementation {
     let id: UsageProvider = .claude
     let supportsLoginFlow: Bool = true
@@ -55,19 +53,20 @@ struct ClaudeProviderImplementation: ProviderImplementation {
     @MainActor
     func sourceMode(context: ProviderSourceModeContext) -> ProviderSourceMode {
         switch context.settings.claudeUsageDataSource {
-        case .auto: .auto
-        case .oauth: .oauth
-        case .web: .web
-        case .cli: .cli
+        case .auto: return .auto
+        case .oauth: return .oauth
+        case .web: return .web
+        case .cli: return .cli
         }
     }
 
     @MainActor
     func settingsToggles(context: ProviderSettingsContext) -> [ProviderSettingsToggleDescriptor] {
-        let subtitle = if context.settings.debugDisableKeychainAccess {
-            "Inactive while \"Disable Keychain access\" is enabled in Advanced."
+        let subtitle: String
+        if context.settings.debugDisableKeychainAccess {
+            subtitle = "Inactive while \"Disable Keychain access\" is enabled in Advanced."
         } else {
-            "Use /usr/bin/security to read Claude credentials and avoid CodexBar keychain prompts."
+            subtitle = "Use /usr/bin/security to read Claude credentials and avoid CodexBar keychain prompts."
         }
 
         let promptFreeBinding = Binding(

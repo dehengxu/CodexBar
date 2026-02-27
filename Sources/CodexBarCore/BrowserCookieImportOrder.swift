@@ -1,7 +1,5 @@
 #if os(macOS)
-import SweetCookieKit
-
-public typealias BrowserCookieImportOrder = [Browser]
+// BrowserCookieImportOrder is defined in SweetCookieKitCompat.swift
 #else
 public struct Browser: Sendable, Hashable {
     public init() {}

@@ -12,23 +12,23 @@ public enum ClaudeUsageDataSource: String, CaseIterable, Identifiable, Sendable 
 
     public var displayName: String {
         switch self {
-        case .auto: "Auto"
-        case .oauth: "OAuth API"
-        case .web: "Web API (cookies)"
-        case .cli: "CLI (PTY)"
+        case .auto: return "Auto"
+        case .oauth: return "OAuth API"
+        case .web: return "Web API (cookies)"
+        case .cli: return "CLI (PTY)"
         }
     }
 
     public var sourceLabel: String {
         switch self {
         case .auto:
-            "auto"
+            return "auto"
         case .oauth:
-            "oauth"
+            return "oauth"
         case .web:
-            "web"
+            return "web"
         case .cli:
-            "cli"
+            return "cli"
         }
     }
 }

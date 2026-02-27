@@ -17,15 +17,15 @@ public enum CodexTokenRefresher {
         public var errorDescription: String? {
             switch self {
             case .expired:
-                "Refresh token expired. Please run `codex` to log in again."
+                return "Refresh token expired. Please run `codex` to log in again."
             case .revoked:
-                "Refresh token was revoked. Please run `codex` to log in again."
+                return "Refresh token was revoked. Please run `codex` to log in again."
             case .reused:
-                "Refresh token was already used. Please run `codex` to log in again."
+                return "Refresh token was already used. Please run `codex` to log in again."
             case let .networkError(error):
-                "Network error during token refresh: \(error.localizedDescription)"
+                return "Network error during token refresh: \(error.localizedDescription)"
             case let .invalidResponse(message):
-                "Invalid refresh response: \(message)"
+                return "Invalid refresh response: \(message)"
             }
         }
     }

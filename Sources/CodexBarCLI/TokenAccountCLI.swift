@@ -88,13 +88,14 @@ struct TokenAccountCLIContext {
                     cookieSource: cookieSource,
                     manualCookieHeader: cookieHeader))
         case .claude:
-            let claudeSource: ClaudeUsageDataSource = if provider == .claude,
-                                                         let account,
-                                                         TokenAccountSupportCatalog.isClaudeOAuthToken(account.token)
+            let claudeSource: ClaudeUsageDataSource
+            if provider == .claude,
+               let account,
+               TokenAccountSupportCatalog.isClaudeOAuthToken(account.token)
             {
-                .oauth
+                claudeSource = .oauth
             } else {
-                .auto
+                claudeSource = .auto
             }
             let effectiveSource = (claudeSource == .oauth) ? ProviderCookieSource.off : cookieSource
             return self.makeSnapshot(

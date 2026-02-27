@@ -120,7 +120,7 @@ public struct CostUsageDailyReport: Sendable, Decodable {
 
         private static func decodeModelsUsed(from container: KeyedDecodingContainer<CodingKeys>) -> [String]? {
             func decodeStringList(_ key: CodingKeys) -> [String]? {
-                (try? container.decodeIfPresent([String].self, forKey: key)).flatMap(\.self)
+                (try? container.decodeIfPresent([String].self, forKey: key)).flatMap { $0 }
             }
 
             if let modelsUsed = decodeStringList(.modelsUsed) { return modelsUsed }

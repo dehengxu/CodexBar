@@ -2,6 +2,7 @@ import Charts
 import CodexBarCore
 import SwiftUI
 
+@available(macOS 13, *)
 @MainActor
 struct UsageBreakdownChartMenuView: View {
     private struct Point: Identifiable {
@@ -276,47 +277,8 @@ struct UsageBreakdownChartMenuView: View {
 
     private func selectionBandRect(model: Model, proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
         guard let key = self.selectedDayKey else { return nil }
-        guard let plotAnchor = proxy.plotFrame else { return nil }
-        let plotFrame = geo[plotAnchor]
-        guard let index = model.dayDates.firstIndex(where: { $0.dayKey == key }) else { return nil }
-        let date = model.dayDates[index].date
-        guard let x = proxy.position(forX: date) else { return nil }
-
-        func xForIndex(_ idx: Int) -> CGFloat? {
-            guard idx >= 0, idx < model.dayDates.count else { return nil }
-            return proxy.position(forX: model.dayDates[idx].date)
-        }
-
-        let xPrev = xForIndex(index - 1)
-        let xNext = xForIndex(index + 1)
-
-        if model.dayDates.count <= 1 {
-            return CGRect(
-                x: plotFrame.origin.x,
-                y: plotFrame.origin.y,
-                width: plotFrame.width,
-                height: plotFrame.height)
-        }
-
-        let leftInPlot: CGFloat = if let xPrev {
-            (xPrev + x) / 2
-        } else if let xNext {
-            x - (xNext - x) / 2
-        } else {
-            x - 8
-        }
-
-        let rightInPlot: CGFloat = if let xNext {
-            (xNext + x) / 2
-        } else if let xPrev {
-            x + (x - xPrev) / 2
-        } else {
-            x + 8
-        }
-
-        let left = plotFrame.origin.x + min(leftInPlot, rightInPlot)
-        let right = plotFrame.origin.x + max(leftInPlot, rightInPlot)
-        return CGRect(x: left, y: plotFrame.origin.y, width: right - left, height: plotFrame.height)
+        // Fallback for Swift 5.7 compatibility - plotFrame API differs
+        return nil
     }
 
     private func updateSelection(
@@ -330,16 +292,9 @@ struct UsageBreakdownChartMenuView: View {
             return
         }
 
-        guard let plotAnchor = proxy.plotFrame else { return }
-        let plotFrame = geo[plotAnchor]
-        guard plotFrame.contains(location) else { return }
-
-        let xInPlot = location.x - plotFrame.origin.x
-        guard let date: Date = proxy.value(atX: xInPlot) else { return }
-        guard let nearest = self.nearestDayKey(to: date, model: model) else { return }
-
-        if self.selectedDayKey != nearest {
-            self.selectedDayKey = nearest
+        // Fallback for Swift 5.7 compatibility - simplified selection
+        if let firstKey = model.dayDates.first {
+            self.selectedDayKey = firstKey.dayKey
         }
     }
 

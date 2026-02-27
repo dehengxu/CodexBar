@@ -1,9 +1,7 @@
-import CodexBarMacroSupport
 import Foundation
 
-@ProviderDescriptorRegistration
-@ProviderDescriptorDefinition
 public enum MiniMaxProviderDescriptor {
+    static let descriptor = MiniMaxProviderDescriptor.makeDescriptor()
     static func makeDescriptor() -> ProviderDescriptor {
         ProviderDescriptor(
             id: .minimax,
@@ -293,7 +291,7 @@ struct MiniMaxCodingPlanFetchStrategy: ProviderFetchStrategy {
         let tokenCandidates = tokenContext.tokensByLabel[normalizedLabel] ?? []
         let groupID = tokenContext.groupIDByLabel[normalizedLabel]
         let cookieToken = Self.cookieValue(named: "HERTZ-SESSION", in: cookieHeader)
-        var attempts: [String?] = tokenCandidates.map(\.self)
+        var attempts: [String?] = tokenCandidates.map { $0 }
         if let cookieToken, !tokenCandidates.contains(cookieToken) {
             attempts.append(cookieToken)
         }

@@ -4,7 +4,6 @@ import FoundationNetworking
 #endif
 
 #if os(macOS)
-import SweetCookieKit
 #endif
 
 public enum AmpUsageError: LocalizedError, Sendable {
@@ -17,15 +16,15 @@ public enum AmpUsageError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .notLoggedIn:
-            "Not logged in to Amp. Please log in via ampcode.com."
+            return "Not logged in to Amp. Please log in via ampcode.com."
         case .invalidCredentials:
-            "Amp session cookie expired. Please log in again."
+            return "Amp session cookie expired. Please log in again."
         case let .parseFailed(message):
-            "Could not parse Amp usage: \(message)"
+            return "Could not parse Amp usage: \(message)"
         case let .networkError(message):
-            "Amp request failed: \(message)"
+            return "Amp request failed: \(message)"
         case .noSessionCookie:
-            "No Amp session cookie found. Please log in to ampcode.com in your browser."
+            return "No Amp session cookie found. Please log in to ampcode.com in your browser."
         }
     }
 }

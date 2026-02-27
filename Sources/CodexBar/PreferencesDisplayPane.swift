@@ -6,8 +6,8 @@ struct DisplayPane: View {
     private static let maxOverviewProviders = SettingsStore.mergedOverviewProviderLimit
 
     @State private var isOverviewProviderPopoverPresented = false
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @ObservedObject var settings: SettingsStore
+    @ObservedObject var store: UsageStore
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {
@@ -91,14 +91,14 @@ struct DisplayPane: View {
             .onAppear {
                 self.reconcileOverviewSelection()
             }
-            .onChange(of: self.settings.mergeIcons) { _, isEnabled in
+            .onChange(of: self.settings.mergeIcons) { isEnabled in
                 guard isEnabled else {
                     self.isOverviewProviderPopoverPresented = false
                     return
                 }
                 self.reconcileOverviewSelection()
             }
-            .onChange(of: self.activeProvidersInOrder) { _, _ in
+            .onChange(of: self.activeProvidersInOrder) { _ in
                 if self.activeProvidersInOrder.isEmpty {
                     self.isOverviewProviderPopoverPresented = false
                 }

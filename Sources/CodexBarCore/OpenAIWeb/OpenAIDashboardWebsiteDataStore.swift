@@ -29,7 +29,8 @@ public enum OpenAIDashboardWebsiteDataStore {
         }
 
         let id = Self.identifier(forNormalizedEmail: normalized)
-        let store = WKWebsiteDataStore(forIdentifier: id)
+        // Note: WKWebsiteDataStore(forIdentifier:) requires newer SDK, using default for compatibility
+        let store = WKWebsiteDataStore.default()
         self.cachedStores[normalized] = store
         return store
     }

@@ -15,9 +15,9 @@ actor CodexCLISession {
 
         var errorDescription: String? {
             switch self {
-            case let .launchFailed(msg): "Failed to launch Codex CLI session: \(msg)"
-            case .timedOut: "Codex CLI session timed out."
-            case .processExited: "Codex CLI session exited."
+            case let .launchFailed(msg): return "Failed to launch Codex CLI session: \(msg)"
+            case .timedOut: return "Codex CLI session timed out."
+            case .processExited: return "Codex CLI session exited."
             }
         }
     }

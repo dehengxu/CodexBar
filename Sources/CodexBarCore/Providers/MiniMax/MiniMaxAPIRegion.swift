@@ -11,27 +11,27 @@ public enum MiniMaxAPIRegion: String, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .global:
-            "Global (platform.minimax.io)"
+            return "Global (platform.minimax.io)"
         case .chinaMainland:
-            "China mainland (platform.minimaxi.com)"
+            return "China mainland (platform.minimaxi.com)"
         }
     }
 
     public var baseURLString: String {
         switch self {
         case .global:
-            "https://platform.minimax.io"
+            return "https://platform.minimax.io"
         case .chinaMainland:
-            "https://platform.minimaxi.com"
+            return "https://platform.minimaxi.com"
         }
     }
 
     public var apiBaseURLString: String {
         switch self {
         case .global:
-            "https://api.minimax.io"
+            return "https://api.minimax.io"
         case .chinaMainland:
-            "https://api.minimaxi.com"
+            return "https://api.minimaxi.com"
         }
     }
 

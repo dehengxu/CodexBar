@@ -1,5 +1,4 @@
 import Foundation
-import SweetCookieKit
 
 #if os(macOS)
 
@@ -191,12 +190,13 @@ public struct AugmentStatusSnapshot: Sendable {
     }
 
     public func toUsageSnapshot() -> UsageSnapshot {
-        let percentUsed: Double = if let used = self.creditsUsed, let limit = self.creditsLimit, limit > 0 {
-            (used / limit) * 100.0
+        let percentUsed: Double
+        if let used = self.creditsUsed, let limit = self.creditsLimit, limit > 0 {
+            percentUsed = (used / limit) * 100.0
         } else if let remaining = self.creditsRemaining, let limit = self.creditsLimit, limit > 0 {
-            ((limit - remaining) / limit) * 100.0
+            percentUsed = ((limit - remaining) / limit) * 100.0
         } else {
-            0
+            percentUsed = 0
         }
 
         let primary = RateWindow(
@@ -239,15 +239,15 @@ public enum AugmentStatusProbeError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .notLoggedIn:
-            "Not logged in to Augment. Please log in via the CodexBar menu."
+            return "Not logged in to Augment. Please log in via the CodexBar menu."
         case let .networkError(msg):
-            "Augment API error: \(msg)"
+            return "Augment API error: \(msg)"
         case let .parseFailed(msg):
-            "Could not parse Augment usage: \(msg)"
+            return "Could not parse Augment usage: \(msg)"
         case .noSessionCookie:
-            "No Augment session found. Please log in to app.augmentcode.com in \(augmentCookieImportOrder.loginHint)."
+            return "No Augment session found. Please log in to app.augmentcode.com in \(augmentCookieImportOrder.loginHint)."
         case .sessionExpired:
-            "Augment session expired. Please log in again."
+            return "Augment session expired. Please log in again."
         }
     }
 }
@@ -652,7 +652,7 @@ public enum AugmentStatusProbeError: LocalizedError, Sendable {
     case notSupported
 
     public var errorDescription: String? {
-        "Augment is only supported on macOS."
+        return "Augment is only supported on macOS."
     }
 }
 

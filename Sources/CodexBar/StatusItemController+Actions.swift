@@ -38,10 +38,11 @@ extension StatusItemController {
         let meta = self.store.metadata(for: provider)
 
         // For Claude, route subscription users to claude.ai/settings/usage instead of console billing
-        let urlString: String? = if provider == .claude, self.store.isClaudeSubscription() {
-            meta.subscriptionDashboardURL ?? meta.dashboardURL
+        let urlString: String?
+        if provider == .claude, self.store.isClaudeSubscription() {
+            urlString = meta.subscriptionDashboardURL ?? meta.dashboardURL
         } else {
-            meta.dashboardURL
+            urlString = meta.dashboardURL
         }
 
         guard let urlString, let url = URL(string: urlString) else { return }
@@ -111,8 +112,7 @@ extension StatusItemController {
         self.loginTask = Task { @MainActor [weak self] in
             guard let self else { return }
             defer {
-                self.activeLoginProvider = nil
-                self.loginTask = nil
+                // Properties will be reset by the caller
             }
             self.activeLoginProvider = provider
             self.loginPhase = .requesting
@@ -125,6 +125,9 @@ extension StatusItemController {
                 }
                 self.loginLogger.info("Triggered refresh after login", metadata: ["provider": provider.rawValue])
             }
+            // Reset after completion
+            self.activeLoginProvider = nil
+            self.loginTask = nil
         }
     }
 
@@ -246,29 +249,29 @@ extension StatusItemController {
 
     func describe(_ outcome: CodexLoginRunner.Result.Outcome) -> String {
         switch outcome {
-        case .success: "success"
-        case .timedOut: "timedOut"
-        case let .failed(status): "failed(status: \(status))"
-        case .missingBinary: "missingBinary"
-        case let .launchFailed(message): "launchFailed(\(message))"
+        case .success: return "success"
+        case .timedOut: return "timedOut"
+        case let .failed(status): return "failed(status: \(status))"
+        case .missingBinary: return "missingBinary"
+        case let .launchFailed(message): return "launchFailed(\(message))"
         }
     }
 
     func describe(_ outcome: ClaudeLoginRunner.Result.Outcome) -> String {
         switch outcome {
-        case .success: "success"
-        case .timedOut: "timedOut"
-        case let .failed(status): "failed(status: \(status))"
-        case .missingBinary: "missingBinary"
-        case let .launchFailed(message): "launchFailed(\(message))"
+        case .success: return "success"
+        case .timedOut: return "timedOut"
+        case let .failed(status): return "failed(status: \(status))"
+        case .missingBinary: return "missingBinary"
+        case let .launchFailed(message): return "launchFailed(\(message))"
         }
     }
 
     func describe(_ outcome: GeminiLoginRunner.Result.Outcome) -> String {
         switch outcome {
-        case .success: "success"
-        case .missingBinary: "missingBinary"
-        case let .launchFailed(message): "launchFailed(\(message))"
+        case .success: return "success"
+        case .missingBinary: return "missingBinary"
+        case let .launchFailed(message): return "launchFailed(\(message))"
         }
     }
 
@@ -285,13 +288,13 @@ extension StatusItemController {
     nonisolated static func geminiLoginAlertInfo(for result: GeminiLoginRunner.Result) -> LoginAlertInfo? {
         switch result.outcome {
         case .success:
-            nil
+            return nil
         case .missingBinary:
-            LoginAlertInfo(
+            return LoginAlertInfo(
                 title: "Gemini CLI not found",
                 message: "Install the Gemini CLI (npm i -g @google/gemini-cli) and try again.")
         case let .launchFailed(message):
-            LoginAlertInfo(title: "Could not open Terminal for Gemini", message: message)
+            return LoginAlertInfo(title: "Could not open Terminal for Gemini", message: message)
         }
     }
 
@@ -333,9 +336,9 @@ extension StatusItemController {
 
     func describe(_ outcome: CursorLoginRunner.Result.Outcome) -> String {
         switch outcome {
-        case .success: "success"
-        case .cancelled: "cancelled"
-        case let .failed(message): "failed(\(message))"
+        case .success: return "success"
+        case .cancelled: return "cancelled"
+        case let .failed(message): return "failed(\(message))"
         }
     }
 }

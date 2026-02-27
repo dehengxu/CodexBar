@@ -30,10 +30,11 @@ public struct KimiK2UsageSummary: Sendable {
 
     public func toUsageSnapshot() -> UsageSnapshot {
         let total = max(0, self.consumed + self.remaining)
-        let usedPercent: Double = if total > 0 {
-            min(100, max(0, (self.consumed / total) * 100))
+        let usedPercent: Double
+        if total > 0 {
+            usedPercent = min(100, max(0, (self.consumed / total) * 100))
         } else {
-            0
+            usedPercent = 0
         }
         let usedText = String(format: "%.0f", self.consumed)
         let totalText = String(format: "%.0f", total)
@@ -66,13 +67,13 @@ public enum KimiK2UsageError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .missingCredentials:
-            "Missing Kimi K2 API key."
+            return "Missing Kimi K2 API key."
         case let .networkError(message):
-            "Kimi K2 network error: \(message)"
+            return "Kimi K2 network error: \(message)"
         case let .apiError(message):
-            "Kimi K2 API error: \(message)"
+            return "Kimi K2 API error: \(message)"
         case let .parseFailed(message):
-            "Failed to parse Kimi K2 response: \(message)"
+            return "Failed to parse Kimi K2 response: \(message)"
         }
     }
 }

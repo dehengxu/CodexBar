@@ -34,13 +34,13 @@ public enum CodexStatusProbeError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .codexNotInstalled:
-            "Codex CLI missing. Install via `npm i -g @openai/codex` (or bun install) and restart."
+            return "Codex CLI missing. Install via `npm i -g @openai/codex` (or bun install) and restart."
         case .parseFailed:
-            "Could not parse Codex status; will retry shortly."
+            return "Could not parse Codex status; will retry shortly."
         case .timedOut:
-            "Codex status probe timed out."
+            return "Codex status probe timed out."
         case let .updateRequired(msg):
-            "Codex CLI update needed: \(msg)"
+            return "Codex CLI update needed: \(msg)"
         }
     }
 }

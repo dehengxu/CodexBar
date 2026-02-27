@@ -1,7 +1,7 @@
 import AppKit
 import CodexBarCore
+import Combine
 import KeyboardShortcuts
-import Observation
 import QuartzCore
 import Security
 import SwiftUI
@@ -64,7 +64,6 @@ struct CodexBarApp: App {
         WindowGroup("CodexBarLifecycleKeepalive") {
             HiddenWindowView()
         }
-        .defaultSize(width: 20, height: 20)
         .windowStyle(.hiddenTitleBar)
 
         Settings {
@@ -74,8 +73,6 @@ struct CodexBarApp: App {
                 updater: self.appDelegate.updaterController,
                 selection: self.preferencesSelection)
         }
-        .defaultSize(width: PreferencesTab.general.preferredWidth, height: PreferencesTab.general.preferredHeight)
-        .windowResizability(.contentSize)
     }
 
     private func openSettings(tab: PreferencesTab) {
@@ -113,10 +110,9 @@ final class DisabledUpdaterController: UpdaterProviding {
 }
 
 @MainActor
-@Observable
-final class UpdateStatus {
+final class UpdateStatus: ObservableObject {
     static let disabled = UpdateStatus()
-    var isUpdateReady: Bool
+    @Published var isUpdateReady: Bool
 
     init(isUpdateReady: Bool = false) {
         self.isUpdateReady = isUpdateReady

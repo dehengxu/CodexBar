@@ -1,15 +1,14 @@
 import Foundation
 #if canImport(SweetCookieKit)
-import SweetCookieKit
 #endif
 
 public enum KeychainAccessGate {
     private static let flagKey = "debugDisableKeychainAccess"
     private static let appGroupID = "group.com.steipete.codexbar"
     @TaskLocal private static var taskOverrideValue: Bool?
-    private nonisolated(unsafe) static var overrideValue: Bool?
+    private static var overrideValue: Bool?
 
-    public nonisolated(unsafe) static var isDisabled: Bool {
+    public static var isDisabled: Bool {
         get {
             if let taskOverrideValue { return taskOverrideValue }
             if let overrideValue { return overrideValue }

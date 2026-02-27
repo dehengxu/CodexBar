@@ -4,7 +4,7 @@ import CodexBarCore
 extension StatusItemController {
     func runCursorLoginFlow() async {
         let cursorRunner = CursorLoginRunner(browserDetection: self.store.browserDetection)
-        let phaseHandler: @Sendable (CursorLoginRunner.Phase) -> Void = { [weak self] phase in
+        let phaseHandler: (CursorLoginRunner.Phase) -> Void = { [weak self] phase in
             Task { @MainActor in
                 switch phase {
                 case .loading, .waitingLogin:

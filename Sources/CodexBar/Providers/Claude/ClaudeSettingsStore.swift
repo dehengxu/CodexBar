@@ -8,11 +8,12 @@ extension SettingsStore {
             return Self.claudeUsageDataSource(from: source)
         }
         set {
-            let source: ProviderSourceMode? = switch newValue {
-            case .auto: .auto
-            case .oauth: .oauth
-            case .web: .web
-            case .cli: .cli
+            let source: ProviderSourceMode?
+            switch newValue {
+            case .auto: source = .auto
+            case .oauth: source = .oauth
+            case .web: source = .web
+            case .cli: source = .cli
             }
             self.updateProviderConfig(provider: .claude) { entry in
                 entry.source = source

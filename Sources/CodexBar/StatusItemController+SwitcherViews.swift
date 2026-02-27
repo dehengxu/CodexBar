@@ -156,11 +156,12 @@ final class ProviderSwitcherView: NSView {
                 button.imagePosition = .noImage
             }
 
-            let remaining: Double? = switch segment.selection {
+            let remaining: Double?
+            switch segment.selection {
             case let .provider(provider):
-                self.weeklyRemainingProvider(provider)
+                remaining = self.weeklyRemainingProvider(provider)
             case .overview:
-                nil
+                remaining = nil
             }
             self.addWeeklyIndicator(to: button, selection: segment.selection, remainingPercent: remaining)
             button.bezelStyle = .regularSquare
@@ -523,12 +524,12 @@ final class ProviderSwitcherView: NSView {
             let isSelected = button.state == .on
             let isHovered = self.hoveredButtonTag == button.tag
             button.contentTintColor = isSelected ? self.selectedTextColor : self.unselectedTextColor
-            button.layer?.backgroundColor = if isSelected {
-                self.selectedBackground
+            if isSelected {
+                button.layer?.backgroundColor = self.selectedBackground
             } else if isHovered {
-                self.hoverPlateColor()
+                button.layer?.backgroundColor = self.hoverPlateColor()
             } else {
-                self.unselectedBackground
+                button.layer?.backgroundColor = self.unselectedBackground
             }
             self.updateWeeklyIndicatorVisibility(for: button)
             (button as? StackedToggleButton)?.setContentTintColor(button.contentTintColor)
@@ -614,10 +615,11 @@ final class ProviderSwitcherView: NSView {
         let evenMaxAllowed = maxAllowedWidth > 0
             ? (maxAllowedWidth.truncatingRemainder(dividingBy: 2) == 0 ? maxAllowedWidth : maxAllowedWidth - 1)
             : 0
-        let finalWidth: CGFloat = if evenMaxAllowed > 0 {
-            min(evenMaxDesired, evenMaxAllowed)
+        let finalWidth: CGFloat
+        if evenMaxAllowed > 0 {
+            finalWidth = min(evenMaxDesired, evenMaxAllowed)
         } else {
-            evenMaxDesired
+            finalWidth = evenMaxDesired
         }
 
         if finalWidth > 0 {

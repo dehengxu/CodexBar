@@ -111,13 +111,13 @@ public enum JetBrainsStatusProbeError: LocalizedError, Sendable, Equatable {
     public var errorDescription: String? {
         switch self {
         case .noIDEDetected:
-            "No JetBrains IDE with AI Assistant detected. Install a JetBrains IDE and enable AI Assistant."
+            return "No JetBrains IDE with AI Assistant detected. Install a JetBrains IDE and enable AI Assistant."
         case let .quotaFileNotFound(path):
-            "JetBrains AI quota file not found at \(path). Enable AI Assistant in your IDE."
+            return "JetBrains AI quota file not found at \(path). Enable AI Assistant in your IDE."
         case let .parseError(message):
-            "Could not parse JetBrains AI quota: \(message)"
+            return "Could not parse JetBrains AI quota: \(message)"
         case .noQuotaInfo:
-            "No quota information found in the JetBrains AI configuration."
+            return "No quota information found in the JetBrains AI configuration."
         }
     }
 }

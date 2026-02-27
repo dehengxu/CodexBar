@@ -27,7 +27,7 @@ public enum KeychainCacheStore {
     private static let log = CodexBarLog.logger(LogCategories.keychainCache)
     private static let cacheService = "com.steipete.codexbar.cache"
     private static let cacheLabel = "CodexBar Cache"
-    private nonisolated(unsafe) static var globalServiceOverride: String?
+    private static var globalServiceOverride: String?
     @TaskLocal private static var serviceOverride: String?
     private static let testStoreLock = NSLock()
     private struct TestStoreKey: Hashable {
@@ -35,8 +35,8 @@ public enum KeychainCacheStore {
         let account: String
     }
 
-    private nonisolated(unsafe) static var testStore: [TestStoreKey: Data]?
-    private nonisolated(unsafe) static var testStoreRefCount = 0
+    private static var testStore: [TestStoreKey: Data]?
+    private static var testStoreRefCount = 0
 
     public static func load<Entry: Codable>(
         key: Key,

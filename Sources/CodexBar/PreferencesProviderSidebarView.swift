@@ -5,7 +5,7 @@ import UniformTypeIdentifiers
 @MainActor
 struct ProviderSidebarListView: View {
     let providers: [UsageProvider]
-    @Bindable var store: UsageStore
+    @ObservedObject var store: UsageStore
     let isEnabled: (UsageProvider) -> Binding<Bool>
     let subtitle: (UsageProvider) -> String
     @Binding var selection: UsageProvider?
@@ -32,7 +32,6 @@ struct ProviderSidebarListView: View {
             }
         }
         .listStyle(.sidebar)
-        .scrollContentBackground(.hidden)
         .background(
             RoundedRectangle(cornerRadius: ProviderSettingsMetrics.sidebarCornerRadius, style: .continuous)
                 .fill(.regularMaterial))
@@ -47,7 +46,7 @@ struct ProviderSidebarListView: View {
 @MainActor
 private struct ProviderSidebarRowView: View {
     let provider: UsageProvider
-    @Bindable var store: UsageStore
+    @ObservedObject var store: UsageStore
     @Binding var isEnabled: Bool
     let subtitle: String
     @Binding var draggingProvider: UsageProvider?
@@ -199,12 +198,12 @@ private struct ProviderStatusDot: View {
 
     private var statusColor: Color {
         switch self.indicator {
-        case .none: .green
-        case .minor: .yellow
-        case .major: .orange
-        case .critical: .red
-        case .maintenance: .gray
-        case .unknown: .gray
+        case .none: return Color.green
+        case .minor: return Color.yellow
+        case .major: return Color.orange
+        case .critical: return Color.red
+        case .maintenance: return Color.gray
+        case .unknown: return Color.gray
         }
     }
 }

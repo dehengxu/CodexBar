@@ -1,13 +1,10 @@
-import CodexBarMacroSupport
 import Foundation
 
 #if os(macOS)
-import SweetCookieKit
 #endif
 
-@ProviderDescriptorRegistration
-@ProviderDescriptorDefinition
 public enum AugmentProviderDescriptor {
+    static let descriptor = AugmentProviderDescriptor.makeDescriptor()
     static func makeDescriptor() -> ProviderDescriptor {
         #if os(macOS)
         // Custom browser order that includes Chrome Beta and other variants

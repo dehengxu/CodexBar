@@ -31,7 +31,7 @@ extension StatusItemController {
         // Refresh after user may have logged in
         self.loginPhase = .idle
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(nanoseconds: 2 * 1_000_000_000)
             await self.store.refresh()
         }
     }

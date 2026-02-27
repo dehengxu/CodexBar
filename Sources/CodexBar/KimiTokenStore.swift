@@ -14,9 +14,9 @@ enum KimiTokenStoreError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .keychainStatus(status):
-            "Keychain error: \(status)"
+            return "Keychain error: \(status)"
         case .invalidData:
-            "Keychain returned invalid data."
+            return "Keychain returned invalid data."
         }
     }
 }

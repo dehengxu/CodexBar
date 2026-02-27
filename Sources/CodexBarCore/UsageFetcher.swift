@@ -219,11 +219,11 @@ public enum UsageError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .noSessions:
-            "No Codex sessions found yet. Run at least one Codex prompt first."
+            return "No Codex sessions found yet. Run at least one Codex prompt first."
         case .noRateLimitsFound:
-            "Found sessions, but no rate limit events yet."
+            return "Found sessions, but no rate limit events yet."
         case .decodeFailed:
-            "Could not parse Codex session log."
+            return "Could not parse Codex session log."
         }
     }
 }
@@ -294,11 +294,11 @@ private enum RPCWireError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .startFailed(message):
-            "Codex not running. Try running a Codex command first. (\(message))"
+            return "Codex not running. Try running a Codex command first. (\(message))"
         case let .requestFailed(message):
-            "Codex connection failed: \(message)"
+            return "Codex connection failed: \(message)"
         case let .malformed(message):
-            "Codex returned invalid data: \(message)"
+            return "Codex returned invalid data: \(message)"
         }
     }
 }
@@ -501,11 +501,11 @@ private final class CodexRPCClient: @unchecked Sendable {
     private func jsonID(_ value: Any?) -> Int? {
         switch value {
         case let int as Int:
-            int
+            return int
         case let number as NSNumber:
-            number.intValue
+            return number.intValue
         default:
-            nil
+            return nil
         }
     }
 }
@@ -545,12 +545,12 @@ public struct UsageFetcher: Sendable {
 
         let identity = ProviderIdentitySnapshot(
             providerID: .codex,
-            accountEmail: account?.account.flatMap { details in
-                if case let .chatgpt(email, _) = details { email } else { nil }
+            accountEmail: account?.account.flatMap { details -> String? in
+                if case let .chatgpt(email, _) = details { return email } else { return nil }
             },
             accountOrganization: nil,
-            loginMethod: account?.account.flatMap { details in
-                if case let .chatgpt(_, plan) = details { plan } else { nil }
+            loginMethod: account?.account.flatMap { details -> String? in
+                if case let .chatgpt(_, plan) = details { return plan } else { return nil }
             })
         return UsageSnapshot(
             primary: primary,

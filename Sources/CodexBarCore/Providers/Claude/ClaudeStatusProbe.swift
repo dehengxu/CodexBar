@@ -33,11 +33,11 @@ public enum ClaudeStatusProbeError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .claudeNotInstalled:
-            "Claude CLI is not installed or not on PATH."
+            return "Claude CLI is not installed or not on PATH."
         case let .parseFailed(msg):
-            "Could not parse Claude usage: \(msg)"
+            return "Could not parse Claude usage: \(msg)"
         case .timedOut:
-            "Claude usage probe timed out."
+            return "Claude usage probe timed out."
         }
     }
 }
@@ -494,8 +494,8 @@ public struct ClaudeStatusProbe: Sendable {
         // TTY capture sometimes appends a stray ")" at line ends; trim it to keep snapshots stable.
         var cleaned = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         cleaned = cleaned.trimmingCharacters(in: CharacterSet(charactersIn: " )"))
-        let openCount = cleaned.count(where: { $0 == "(" })
-        let closeCount = cleaned.count(where: { $0 == ")" })
+        let openCount = cleaned.filter { $0 == "(" }.count
+        let closeCount = cleaned.filter { $0 == ")" }.count
         if openCount > closeCount { cleaned.append(")") }
         return cleaned
     }

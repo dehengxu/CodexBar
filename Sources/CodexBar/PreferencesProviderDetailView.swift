@@ -4,7 +4,7 @@ import SwiftUI
 @MainActor
 struct ProviderDetailView: View {
     let provider: UsageProvider
-    @Bindable var store: UsageStore
+    @ObservedObject var store: UsageStore
     @Binding var isEnabled: Bool
     let subtitle: String
     let model: UsageMenuCardView.Model
@@ -144,7 +144,7 @@ struct ProviderDetailView: View {
 @MainActor
 private struct ProviderDetailHeaderView: View {
     let provider: UsageProvider
-    @Bindable var store: UsageStore
+    @ObservedObject var store: UsageStore
     @Binding var isEnabled: Bool
     let subtitle: String
     let model: UsageMenuCardView.Model
@@ -226,7 +226,7 @@ private struct ProviderDetailBrandIcon: View {
 @MainActor
 private struct ProviderDetailInfoGrid: View {
     let provider: UsageProvider
-    @Bindable var store: UsageStore
+    @ObservedObject var store: UsageStore
     let isEnabled: Bool
     let model: UsageMenuCardView.Model
     let labelWidth: CGFloat
@@ -239,7 +239,7 @@ private struct ProviderDetailInfoGrid: View {
         let email = self.model.email
         let enabledText = self.isEnabled ? "Enabled" : "Disabled"
 
-        Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 6) {
+        VStack(alignment: .leading, spacing: 6) {
             ProviderDetailInfoRow(label: "State", value: enabledText, labelWidth: self.labelWidth)
             ProviderDetailInfoRow(label: "Source", value: source, labelWidth: self.labelWidth)
             ProviderDetailInfoRow(label: "Version", value: version, labelWidth: self.labelWidth)
@@ -281,7 +281,7 @@ private struct ProviderDetailInfoRow: View {
     let labelWidth: CGFloat
 
     var body: some View {
-        GridRow {
+        HStack(spacing: 12) {
             Text(self.label)
                 .frame(width: self.labelWidth, alignment: .leading)
             Text(self.value)

@@ -1,6 +1,5 @@
 import Foundation
 #if os(macOS)
-import SweetCookieKit
 #endif
 
 #if os(macOS)
@@ -352,9 +351,9 @@ enum MiniMaxLocalStorageImporter {
             "https://www.minimaxi.com",
             "https://minimaxi.com",
         ]
-        var entries: [SweetCookieKit.ChromiumLocalStorageEntry] = []
+        var entries: [ChromiumLocalStorageEntry] = []
         for origin in origins {
-            entries.append(contentsOf: SweetCookieKit.ChromiumLocalStorageReader.readEntries(
+            entries.append(contentsOf: ChromiumLocalStorageReader.readEntries(
                 for: origin,
                 in: levelDBURL,
                 logger: logger))
@@ -377,7 +376,7 @@ enum MiniMaxLocalStorageImporter {
         }
 
         if tokens.isEmpty {
-            let textEntries = SweetCookieKit.ChromiumLocalStorageReader.readTextEntries(
+            let textEntries = ChromiumLocalStorageReader.readTextEntries(
                 in: levelDBURL,
                 logger: logger)
             let candidateEntries = textEntries.filter { entry in
@@ -406,7 +405,7 @@ enum MiniMaxLocalStorageImporter {
         }
 
         if tokens.isEmpty, hasMinimaxSignal {
-            let rawCandidates = SweetCookieKit.ChromiumLocalStorageReader.readTokenCandidates(
+            let rawCandidates = ChromiumLocalStorageReader.readTokenCandidates(
                 in: levelDBURL,
                 minimumLength: 60,
                 logger: logger)
@@ -449,7 +448,7 @@ enum MiniMaxLocalStorageImporter {
         from levelDBURL: URL,
         logger: ((String) -> Void)? = nil) -> [String]
     {
-        let entries = SweetCookieKit.ChromiumLocalStorageReader.readTextEntries(
+        let entries = ChromiumLocalStorageReader.readTextEntries(
             in: levelDBURL,
             logger: logger)
         guard !entries.isEmpty else { return [] }
@@ -512,7 +511,7 @@ enum MiniMaxLocalStorageImporter {
         from levelDBURL: URL,
         logger: ((String) -> Void)? = nil) -> [String]
     {
-        let entries = SweetCookieKit.ChromiumLocalStorageReader.readTextEntries(
+        let entries = ChromiumLocalStorageReader.readTextEntries(
             in: levelDBURL,
             logger: logger)
         var tokens: [String] = []
@@ -528,7 +527,7 @@ enum MiniMaxLocalStorageImporter {
         }
 
         if tokens.isEmpty {
-            let rawCandidates = SweetCookieKit.ChromiumLocalStorageReader.readTokenCandidates(
+            let rawCandidates = ChromiumLocalStorageReader.readTokenCandidates(
                 in: levelDBURL,
                 minimumLength: 60,
                 logger: logger)
@@ -553,7 +552,7 @@ enum MiniMaxLocalStorageImporter {
     }
 
     private static func sessionStorageMapIDs(
-        in entries: [SweetCookieKit.ChromiumLevelDBTextEntry],
+        in entries: [ChromiumLevelDBTextEntry],
         origins: [String],
         logger: ((String) -> Void)? = nil) -> Set<Int>
     {

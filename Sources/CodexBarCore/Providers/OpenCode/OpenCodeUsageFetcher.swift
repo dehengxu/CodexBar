@@ -12,13 +12,13 @@ public enum OpenCodeUsageError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .invalidCredentials:
-            "OpenCode session cookie is invalid or expired."
+            return "OpenCode session cookie is invalid or expired."
         case let .networkError(message):
-            "OpenCode network error: \(message)"
+            return "OpenCode network error: \(message)"
         case let .apiError(message):
-            "OpenCode API error: \(message)"
+            return "OpenCode API error: \(message)"
         case let .parseFailed(message):
-            "OpenCode parse error: \(message)"
+            return "OpenCode parse error: \(message)"
         }
     }
 }
@@ -85,10 +85,11 @@ public struct OpenCodeUsageFetcher: Sendable {
         now: Date = Date(),
         workspaceIDOverride: String? = nil) async throws -> OpenCodeUsageSnapshot
     {
-        let workspaceID: String = if let override = self.normalizeWorkspaceID(workspaceIDOverride) {
-            override
+        let workspaceID: String
+        if let override = self.normalizeWorkspaceID(workspaceIDOverride) {
+            workspaceID = override
         } else {
-            try await self.fetchWorkspaceID(
+            workspaceID = try await self.fetchWorkspaceID(
                 cookieHeader: cookieHeader,
                 timeout: timeout)
         }
@@ -403,26 +404,26 @@ public struct OpenCodeUsageFetcher: Sendable {
     private static func doubleValue(from value: Any?) -> Double? {
         switch value {
         case let number as Double:
-            number
+            return number
         case let number as NSNumber:
-            number.doubleValue
+            return number.doubleValue
         case let string as String:
-            Double(string.trimmingCharacters(in: .whitespacesAndNewlines))
+            return Double(string.trimmingCharacters(in: .whitespacesAndNewlines))
         default:
-            nil
+            return nil
         }
     }
 
     private static func intValue(from value: Any?) -> Int? {
         switch value {
         case let number as Int:
-            number
+            return number
         case let number as NSNumber:
-            number.intValue
+            return number.intValue
         case let string as String:
-            Int(string.trimmingCharacters(in: .whitespacesAndNewlines))
+            return Int(string.trimmingCharacters(in: .whitespacesAndNewlines))
         default:
-            nil
+            return nil
         }
     }
 
@@ -754,14 +755,15 @@ public struct OpenCodeUsageFetcher: Sendable {
         guard let data = text.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data, options: [])
         else {
-            let hint = if trimmed.hasPrefix("<") {
-                "html"
+            let hint: String
+            if trimmed.hasPrefix("<") {
+                hint = "html"
             } else if trimmed.hasPrefix("{") || trimmed.hasPrefix("[") {
-                "json"
+                hint = "json"
             } else if trimmed.isEmpty {
-                "empty"
+                hint = "empty"
             } else {
-                "text"
+                hint = "text"
             }
             Self.log.error("OpenCode response non-JSON: hint=\(hint) length=\(text.count)")
             return
@@ -808,10 +810,10 @@ public struct OpenCodeUsageFetcher: Sendable {
 
     private static func scalarTypeDescription(_ value: Any) -> String {
         switch value {
-        case is String: "string"
-        case is Bool: "bool"
-        case is Int, is Double, is NSNumber: "number"
-        default: "value"
+        case is String: return "string"
+        case is Bool: return "bool"
+        case is Int, is Double, is NSNumber: return "number"
+        default: return "value"
         }
     }
 }

@@ -388,14 +388,15 @@ public enum OpenAIDashboardParser {
         else { return nil }
         let matched = String(text[r])
         let lower = matched.lowercased()
-        let weekday = switch lower.prefix(3) {
-        case "mon": 2
-        case "tue": 3
-        case "wed": 4
-        case "thu": 5
-        case "fri": 6
-        case "sat": 7
-        default: 1
+        let weekday: Int
+        switch lower.prefix(3) {
+        case "mon": weekday = 2
+        case "tue": weekday = 3
+        case "wed": weekday = 4
+        case "thu": weekday = 5
+        case "fri": weekday = 6
+        case "sat": weekday = 7
+        default: weekday = 1
         }
         return WeekdayMatch(matched: matched, weekday: weekday)
     }
@@ -476,8 +477,8 @@ public enum OpenAIDashboardParser {
 extension UInt8 {
     fileprivate var isASCIIWhitespace: Bool {
         switch self {
-        case 9, 10, 13, 32: true
-        default: false
+        case 9, 10, 13, 32: return true
+        default: return false
         }
     }
 }

@@ -1,7 +1,6 @@
 import Foundation
 
 #if os(macOS)
-import os.lock
 
 public enum ClaudeOAuthKeychainAccessGate {
     private struct State {
@@ -9,7 +8,8 @@ public enum ClaudeOAuthKeychainAccessGate {
         var deniedUntil: Date?
     }
 
-    private static let lock = OSAllocatedUnfairLock<State>(initialState: State())
+    private static let lock = NSLock()
+    private static var state = State()
     private static let defaultsKey = "claudeOAuthKeychainDeniedUntil"
     private static let cooldownInterval: TimeInterval = 60 * 60 * 6
     @TaskLocal private static var taskOverrideShouldAllowPromptForTesting: Bool?
@@ -23,9 +23,9 @@ public enum ClaudeOAuthKeychainAccessGate {
 
     public static func shouldAllowPrompt(now: Date = Date()) -> Bool {
         guard !KeychainAccessGate.isDisabled else { return false }
-        if let override = self.taskOverrideShouldAllowPromptForTesting { return override }
+        if let override = taskOverrideShouldAllowPromptForTesting { return override }
         #if DEBUG
-        if let store = self.taskDeniedUntilStoreOverrideForTesting {
+        if let store = taskDeniedUntilStoreOverrideForTesting {
             if let deniedUntil = store.deniedUntil, deniedUntil > now {
                 return false
             }
@@ -33,39 +33,43 @@ public enum ClaudeOAuthKeychainAccessGate {
             return true
         }
         #endif
-        return self.lock.withLock { state in
-            self.loadIfNeeded(&state)
-            if let deniedUntil = state.deniedUntil {
-                if deniedUntil > now {
-                    return false
-                }
-                state.deniedUntil = nil
-                self.persist(state)
+        lock.lock()
+        defer { lock.unlock() }
+        var localState = state
+        loadIfNeeded(&localState)
+        if let deniedUntil = localState.deniedUntil {
+            if deniedUntil > now {
+                return false
             }
-            return true
+            localState.deniedUntil = nil
+            persist(localState)
         }
+        state = localState
+        return true
     }
 
     public static func recordDenied(now: Date = Date()) {
-        let deniedUntil = now.addingTimeInterval(self.cooldownInterval)
+        let deniedUntil = now.addingTimeInterval(cooldownInterval)
         #if DEBUG
-        if let store = self.taskDeniedUntilStoreOverrideForTesting {
+        if let store = taskDeniedUntilStoreOverrideForTesting {
             store.deniedUntil = deniedUntil
             return
         }
         #endif
-        self.lock.withLock { state in
-            self.loadIfNeeded(&state)
-            state.deniedUntil = deniedUntil
-            self.persist(state)
-        }
+        lock.lock()
+        defer { lock.unlock() }
+        var localState = state
+        loadIfNeeded(&localState)
+        localState.deniedUntil = deniedUntil
+        persist(localState)
+        state = localState
     }
 
     /// Clears the cooldown so the next attempt can proceed. Intended for user-initiated repairs.
     /// - Returns: true if a cooldown was present and cleared.
     public static func clearDenied(now: Date = Date()) -> Bool {
         #if DEBUG
-        if let store = self.taskDeniedUntilStoreOverrideForTesting {
+        if let store = taskDeniedUntilStoreOverrideForTesting {
             guard let deniedUntil = store.deniedUntil, deniedUntil > now else {
                 store.deniedUntil = nil
                 return false
@@ -74,17 +78,20 @@ public enum ClaudeOAuthKeychainAccessGate {
             return true
         }
         #endif
-        return self.lock.withLock { state in
-            self.loadIfNeeded(&state)
-            guard let deniedUntil = state.deniedUntil, deniedUntil > now else {
-                state.deniedUntil = nil
-                self.persist(state)
-                return false
-            }
-            state.deniedUntil = nil
-            self.persist(state)
-            return true
+        lock.lock()
+        defer { lock.unlock() }
+        var localState = state
+        loadIfNeeded(&localState)
+        guard let deniedUntil = localState.deniedUntil, deniedUntil > now else {
+            localState.deniedUntil = nil
+            persist(localState)
+            state = localState
+            return false
         }
+        localState.deniedUntil = nil
+        persist(localState)
+        state = localState
+        return true
     }
 
     #if DEBUG
@@ -92,7 +99,7 @@ public enum ClaudeOAuthKeychainAccessGate {
         _ value: Bool?,
         operation: () throws -> T) rethrows -> T
     {
-        try self.$taskOverrideShouldAllowPromptForTesting.withValue(value) {
+        try $taskOverrideShouldAllowPromptForTesting.withValue(value) {
             try operation()
         }
     }
@@ -101,7 +108,7 @@ public enum ClaudeOAuthKeychainAccessGate {
         _ value: Bool?,
         operation: () async throws -> T) async rethrows -> T
     {
-        try await self.$taskOverrideShouldAllowPromptForTesting.withValue(value) {
+        try await $taskOverrideShouldAllowPromptForTesting.withValue(value) {
             try await operation()
         }
     }
@@ -110,7 +117,7 @@ public enum ClaudeOAuthKeychainAccessGate {
         _ store: DeniedUntilStore?,
         operation: () throws -> T) rethrows -> T
     {
-        try self.$taskDeniedUntilStoreOverrideForTesting.withValue(store) {
+        try $taskDeniedUntilStoreOverrideForTesting.withValue(store) {
             try operation()
         }
     }
@@ -119,41 +126,45 @@ public enum ClaudeOAuthKeychainAccessGate {
         _ store: DeniedUntilStore?,
         operation: () async throws -> T) async rethrows -> T
     {
-        try await self.$taskDeniedUntilStoreOverrideForTesting.withValue(store) {
+        try await $taskDeniedUntilStoreOverrideForTesting.withValue(store) {
             try await operation()
         }
     }
 
     public static func resetForTesting() {
-        self.lock.withLock { state in
-            // Keep deterministic during tests: avoid re-loading UserDefaults written by unrelated code paths.
-            state.loaded = true
-            state.deniedUntil = nil
-            UserDefaults.standard.removeObject(forKey: self.defaultsKey)
-        }
+        lock.lock()
+        defer { lock.unlock() }
+        var localState = state
+        // Keep deterministic during tests: avoid re-loading UserDefaults written by unrelated code paths.
+        localState.loaded = true
+        localState.deniedUntil = nil
+        UserDefaults.standard.removeObject(forKey: defaultsKey)
+        state = localState
     }
 
     public static func resetInMemoryForTesting() {
-        self.lock.withLock { state in
-            state.loaded = false
-            state.deniedUntil = nil
-        }
+        lock.lock()
+        defer { lock.unlock() }
+        var localState = state
+        localState.loaded = false
+        localState.deniedUntil = nil
+        state = localState
     }
     #endif
 
-    private static func loadIfNeeded(_ state: inout State) {
-        guard !state.loaded else { return }
-        state.loaded = true
-        if let raw = UserDefaults.standard.object(forKey: self.defaultsKey) as? Double {
-            state.deniedUntil = Date(timeIntervalSince1970: raw)
+    private static func loadIfNeeded(_ localState: inout State) {
+        guard !localState.loaded else { return }
+        localState.loaded = true
+        if let raw = UserDefaults.standard.object(forKey: defaultsKey) as? Double {
+            localState.deniedUntil = Date(timeIntervalSince1970: raw)
         }
     }
 
-    private static func persist(_ state: State) {
-        if let deniedUntil = state.deniedUntil {
-            UserDefaults.standard.set(deniedUntil.timeIntervalSince1970, forKey: self.defaultsKey)
+    private static func persist(_ localState: State) {
+        if let deniedUntil = localState.deniedUntil {
+            UserDefaults.standard.set(deniedUntil.timeIntervalSince1970, forKey: defaultsKey)
         } else {
-            UserDefaults.standard.removeObject(forKey: self.defaultsKey)
+            UserDefaults.standard.removeObject(forKey: defaultsKey)
         }
     }
 }

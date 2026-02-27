@@ -4,8 +4,8 @@ import QuartzCore
 
 extension StatusItemController {
     private static let loadingPercentEpsilon = 0.0001
-    private static let blinkActiveTickInterval: Duration = .milliseconds(75)
-    private static let blinkIdleFallbackInterval: Duration = .seconds(1)
+    private static let blinkActiveTickInterval: TimeInterval = 0.075  // 75 milliseconds
+    private static let blinkIdleFallbackInterval: TimeInterval = 1.0  // 1 second
 
     func needsMenuBarIconAnimation() -> Bool {
         if self.shouldMergeIcons {
@@ -37,7 +37,7 @@ extension StatusItemController {
                         let delay = await MainActor.run {
                             self?.blinkTickSleepDuration(now: Date()) ?? Self.blinkIdleFallbackInterval
                         }
-                        try? await Task.sleep(for: delay)
+                        try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                         await MainActor.run { self?.tickBlink() }
                     }
                 }
@@ -68,7 +68,7 @@ extension StatusItemController {
         }
     }
 
-    private func blinkTickSleepDuration(now: Date) -> Duration {
+    private func blinkTickSleepDuration(now: Date) -> TimeInterval {
         let mergeIcons = self.shouldMergeIcons
         var nextWakeAt: Date?
 
@@ -95,7 +95,7 @@ extension StatusItemController {
         guard let nextWakeAt else { return Self.blinkIdleFallbackInterval }
         let delay = nextWakeAt.timeIntervalSince(now)
         if delay <= 0 { return Self.blinkActiveTickInterval }
-        return .seconds(delay)
+        return delay
     }
 
     private func tickBlink(now: Date = .init()) {
@@ -204,9 +204,9 @@ extension StatusItemController {
 
     private func randomEffect(for provider: UsageProvider) -> MotionEffect {
         if provider == .claude {
-            Bool.random() ? .blink : .wiggle
+            return Bool.random() ? .blink : .wiggle
         } else {
-            Bool.random() ? .blink : .tilt
+            return Bool.random() ? .blink : .tilt
         }
     }
 

@@ -1,5 +1,4 @@
 import Foundation
-import SweetCookieKit
 #if canImport(FoundationNetworking)
 import FoundationNetworking
 #endif
@@ -58,21 +57,21 @@ public enum ClaudeWebAPIFetcher {
         public var errorDescription: String? {
             switch self {
             case .noSessionKeyFound:
-                "No Claude session key found in browser cookies."
+                return "No Claude session key found in browser cookies."
             case .invalidSessionKey:
-                "Invalid Claude session key format."
+                return "Invalid Claude session key format."
             case .notSupportedOnThisPlatform:
-                "Claude web fetching is only supported on macOS."
+                return "Claude web fetching is only supported on macOS."
             case let .networkError(error):
-                "Network error: \(error.localizedDescription)"
+                return "Network error: \(error.localizedDescription)"
             case .invalidResponse:
-                "Invalid response from Claude API."
+                return "Invalid response from Claude API."
             case .unauthorized:
-                "Unauthorized. Your Claude session may have expired."
+                return "Unauthorized. Your Claude session may have expired."
             case let .serverError(code):
-                "Claude API error: HTTP \(code)"
+                return "Claude API error: HTTP \(code)"
             case .noOrganization:
-                "No Claude organization found for this account."
+                return "No Claude organization found for this account."
             }
         }
     }

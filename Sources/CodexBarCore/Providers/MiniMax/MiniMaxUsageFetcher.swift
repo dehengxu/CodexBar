@@ -521,10 +521,11 @@ enum MiniMaxUsageParser {
             throw MiniMaxUsageError.parseFailed("Missing coding plan data.")
         }
 
-        let currentPrompts: Int? = if let total, let remaining {
-            max(0, total - remaining)
+        let currentPrompts: Int?
+        if let total, let remaining {
+            currentPrompts = max(0, total - remaining)
         } else {
-            nil
+            currentPrompts = nil
         }
 
         return MiniMaxUsageSnapshot(
@@ -572,13 +573,13 @@ enum MiniMaxUsageParser {
     }
 
     private static func parsePlanName(data: MiniMaxCodingPlanData) -> String? {
-        let candidates = [
+        let candidates: [String] = [
             data.currentSubscribeTitle,
             data.planName,
             data.comboTitle,
             data.currentPlanTitle,
             data.currentComboCard?.title,
-        ].compactMap(\.self)
+        ].compactMap { $0 }
 
         for candidate in candidates {
             let trimmed = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -588,12 +589,12 @@ enum MiniMaxUsageParser {
     }
 
     private static func parsePlanName(html: String, text: String) -> String? {
-        let candidates = [
+        let candidates: [String] = [
             self.extractFirst(pattern: #"(?i)"planName"\s*:\s*"([^"]+)""#, text: html),
             self.extractFirst(pattern: #"(?i)"plan"\s*:\s*"([^"]+)""#, text: html),
             self.extractFirst(pattern: #"(?i)"packageName"\s*:\s*"([^"]+)""#, text: html),
             self.extractFirst(pattern: #"(?i)Coding\s*Plan\s*([A-Za-z0-9][A-Za-z0-9\s._-]{0,32})"#, text: text),
-        ].compactMap(\.self)
+        ].compactMap { $0 }
 
         for candidate in candidates {
             let cleaned = UsageFormatter.cleanPlanName(candidate)
@@ -714,9 +715,9 @@ enum MiniMaxUsageParser {
     private static func isASCIIWhitespace(_ value: UInt8) -> Bool {
         switch value {
         case 9, 10, 13, 32:
-            true
+            return true
         default:
-            false
+            return false
         }
     }
 
@@ -866,13 +867,13 @@ public enum MiniMaxUsageError: LocalizedError, Sendable, Equatable {
     public var errorDescription: String? {
         switch self {
         case .invalidCredentials:
-            "MiniMax credentials are invalid or expired."
+            return "MiniMax credentials are invalid or expired."
         case let .networkError(message):
-            "MiniMax network error: \(message)"
+            return "MiniMax network error: \(message)"
         case let .apiError(message):
-            "MiniMax API error: \(message)"
+            return "MiniMax API error: \(message)"
         case let .parseFailed(message):
-            "Failed to parse MiniMax coding plan: \(message)"
+            return "Failed to parse MiniMax coding plan: \(message)"
         }
     }
 }

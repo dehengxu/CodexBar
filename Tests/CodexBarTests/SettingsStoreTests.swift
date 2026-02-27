@@ -1,6 +1,6 @@
 import CodexBarCore
+import Combine
 import Foundation
-import Observation
 import Testing
 @testable import CodexBar
 

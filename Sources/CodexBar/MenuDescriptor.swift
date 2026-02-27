@@ -118,16 +118,17 @@ struct MenuDescriptor {
         if let snap = store.snapshot(for: provider) {
             let resetStyle = settings.resetTimeDisplayStyle
             if let primary = snap.primary {
-                let primaryWindow = if provider == .warp {
+                let primaryWindow: RateWindow
+                if provider == .warp {
                     // Warp primary uses resetDescription for non-reset detail (e.g., "Unlimited", "X/Y credits").
                     // Avoid rendering it as a "Resets ..." line.
-                    RateWindow(
+                    primaryWindow = RateWindow(
                         usedPercent: primary.usedPercent,
                         windowMinutes: primary.windowMinutes,
                         resetsAt: primary.resetsAt,
                         resetDescription: nil)
                 } else {
-                    primary
+                    primaryWindow = primary
                 }
                 Self.appendRateWindow(
                     entries: &entries,
@@ -408,15 +409,15 @@ extension MenuDescriptor.MenuAction {
     var systemImageName: String? {
         switch self {
         case .installUpdate, .settings, .about, .quit:
-            nil
-        case .refresh: MenuDescriptor.MenuActionSystemImage.refresh.rawValue
-        case .refreshAugmentSession: MenuDescriptor.MenuActionSystemImage.refresh.rawValue
-        case .dashboard: MenuDescriptor.MenuActionSystemImage.dashboard.rawValue
-        case .statusPage: MenuDescriptor.MenuActionSystemImage.statusPage.rawValue
-        case .switchAccount: MenuDescriptor.MenuActionSystemImage.switchAccount.rawValue
-        case .openTerminal: MenuDescriptor.MenuActionSystemImage.openTerminal.rawValue
-        case .loginToProvider: MenuDescriptor.MenuActionSystemImage.loginToProvider.rawValue
-        case .copyError: MenuDescriptor.MenuActionSystemImage.copyError.rawValue
+            return nil
+        case .refresh: return MenuDescriptor.MenuActionSystemImage.refresh.rawValue
+        case .refreshAugmentSession: return MenuDescriptor.MenuActionSystemImage.refresh.rawValue
+        case .dashboard: return MenuDescriptor.MenuActionSystemImage.dashboard.rawValue
+        case .statusPage: return MenuDescriptor.MenuActionSystemImage.statusPage.rawValue
+        case .switchAccount: return MenuDescriptor.MenuActionSystemImage.switchAccount.rawValue
+        case .openTerminal: return MenuDescriptor.MenuActionSystemImage.openTerminal.rawValue
+        case .loginToProvider: return MenuDescriptor.MenuActionSystemImage.loginToProvider.rawValue
+        case .copyError: return MenuDescriptor.MenuActionSystemImage.copyError.rawValue
         }
     }
 }

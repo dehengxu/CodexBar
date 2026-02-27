@@ -152,14 +152,15 @@ public struct OpenRouterUsageSnapshot: Codable, Sendable {
 
 extension OpenRouterUsageSnapshot {
     public func toUsageSnapshot() -> UsageSnapshot {
-        let primary: RateWindow? = if let keyUsedPercent {
-            RateWindow(
+        let primary: RateWindow?
+        if let keyUsedPercent = self.keyUsedPercent {
+            primary = RateWindow(
                 usedPercent: keyUsedPercent,
                 windowMinutes: nil,
                 resetsAt: nil,
                 resetDescription: nil)
         } else {
-            nil
+            primary = nil
         }
 
         // Format balance for identity display
@@ -420,13 +421,13 @@ public enum OpenRouterUsageError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .invalidCredentials:
-            "Invalid OpenRouter API credentials"
+            return "Invalid OpenRouter API credentials"
         case let .networkError(message):
-            "OpenRouter network error: \(message)"
+            return "OpenRouter network error: \(message)"
         case let .apiError(message):
-            "OpenRouter API error: \(message)"
+            return "OpenRouter API error: \(message)"
         case let .parseFailed(message):
-            "Failed to parse OpenRouter response: \(message)"
+            return "Failed to parse OpenRouter response: \(message)"
         }
     }
 }

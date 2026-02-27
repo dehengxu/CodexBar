@@ -12,9 +12,9 @@ public struct OpenAIDashboardFetcher {
         public var errorDescription: String? {
             switch self {
             case .loginRequired:
-                "OpenAI web access requires login."
+                return "OpenAI web access requires login."
             case let .noDashboardData(body):
-                "OpenAI dashboard data not found. Body sample: \(body.prefix(200))"
+                return "OpenAI dashboard data not found. Body sample: \(body.prefix(200))"
             }
         }
     }
@@ -122,14 +122,14 @@ public struct OpenAIDashboardFetcher {
             }
 
             if scrape.workspacePicker {
-                try? await Task.sleep(for: .milliseconds(500))
+                try? await Task.sleep(nanoseconds: 500 * 1_000_000)
                 continue
             }
 
             // The page is a SPA and can land on ChatGPT UI or other routes; keep forcing the usage URL.
             if let href = scrape.href, !href.contains("/codex/settings/usage") {
                 _ = webView.load(URLRequest(url: self.usageURL))
-                try? await Task.sleep(for: .milliseconds(500))
+                try? await Task.sleep(nanoseconds: 500 * 1_000_000)
                 continue
             }
 
@@ -184,7 +184,7 @@ public struct OpenAIDashboardFetcher {
                         "rows=\(scrape.rows.count)")
                 if scrape.didScrollToCredits {
                     log("scrollIntoView(Credits usage history) requested; waiting…")
-                    try? await Task.sleep(for: .milliseconds(600))
+                    try? await Task.sleep(nanoseconds: 600 * 1_000_000)
                     continue
                 }
 
@@ -201,7 +201,7 @@ public struct OpenAIDashboardFetcher {
                     creditsHeaderInViewport: scrape.creditsHeaderInViewport,
                     didScrollToCredits: scrape.didScrollToCredits))
                 {
-                    try? await Task.sleep(for: .milliseconds(400))
+                    try? await Task.sleep(nanoseconds: 400 * 1_000_000)
                     continue
                 }
             }
@@ -214,7 +214,7 @@ public struct OpenAIDashboardFetcher {
                 if codeReview != nil, usageBreakdown.isEmpty {
                     let elapsed = Date().timeIntervalSince(codeReviewFirstSeenAt ?? Date())
                     if elapsed < 6 {
-                        try? await Task.sleep(for: .milliseconds(400))
+                        try? await Task.sleep(nanoseconds: 400 * 1_000_000)
                         continue
                     }
                 }
@@ -232,7 +232,7 @@ public struct OpenAIDashboardFetcher {
                     updatedAt: Date())
             }
 
-            try? await Task.sleep(for: .milliseconds(500))
+            try? await Task.sleep(nanoseconds: 500 * 1_000_000)
         }
 
         if debugDumpHTML, let html = lastHTML {
@@ -295,13 +295,13 @@ public struct OpenAIDashboardFetcher {
             lastHref = scrape.href ?? lastHref
 
             if scrape.workspacePicker {
-                try? await Task.sleep(for: .milliseconds(500))
+                try? await Task.sleep(nanoseconds: 500 * 1_000_000)
                 continue
             }
 
             if let href = scrape.href, !href.contains("/codex/settings/usage") {
                 _ = webView.load(URLRequest(url: self.usageURL))
-                try? await Task.sleep(for: .milliseconds(500))
+                try? await Task.sleep(nanoseconds: 500 * 1_000_000)
                 continue
             }
 
@@ -471,9 +471,9 @@ public struct OpenAIDashboardFetcher {
         public var errorDescription: String? {
             switch self {
             case .loginRequired:
-                "OpenAI web access requires login."
+                return "OpenAI web access requires login."
             case let .noDashboardData(body):
-                "OpenAI dashboard data not found. Body sample: \(body.prefix(200))"
+                return "OpenAI dashboard data not found. Body sample: \(body.prefix(200))"
             }
         }
     }

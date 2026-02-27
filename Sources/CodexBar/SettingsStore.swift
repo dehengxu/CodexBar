@@ -1,6 +1,6 @@
 import AppKit
 import CodexBarCore
-import Observation
+import Combine
 import ServiceManagement
 
 enum RefreshFrequency: String, CaseIterable, Identifiable {
@@ -17,23 +17,23 @@ enum RefreshFrequency: String, CaseIterable, Identifiable {
 
     var seconds: TimeInterval? {
         switch self {
-        case .manual: nil
-        case .oneMinute: 60
-        case .twoMinutes: 120
-        case .fiveMinutes: 300
-        case .fifteenMinutes: 900
-        case .thirtyMinutes: 1800
+        case .manual: return nil
+        case .oneMinute: return 60
+        case .twoMinutes: return 120
+        case .fiveMinutes: return 300
+        case .fifteenMinutes: return 900
+        case .thirtyMinutes: return 1800
         }
     }
 
     var label: String {
         switch self {
-        case .manual: "Manual"
-        case .oneMinute: "1 min"
-        case .twoMinutes: "2 min"
-        case .fiveMinutes: "5 min"
-        case .fifteenMinutes: "15 min"
-        case .thirtyMinutes: "30 min"
+        case .manual: return "Manual"
+        case .oneMinute: return "1 min"
+        case .twoMinutes: return "2 min"
+        case .fiveMinutes: return "5 min"
+        case .fifteenMinutes: return "15 min"
+        case .thirtyMinutes: return "30 min"
         }
     }
 }
@@ -50,17 +50,16 @@ enum MenuBarMetricPreference: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .automatic: "Automatic"
-        case .primary: "Primary"
-        case .secondary: "Secondary"
-        case .average: "Average"
+        case .automatic: return "Automatic"
+        case .primary: return "Primary"
+        case .secondary: return "Secondary"
+        case .average: return "Average"
         }
     }
 }
 
 @MainActor
-@Observable
-final class SettingsStore {
+final class SettingsStore: ObservableObject {
     static let sharedDefaults = UserDefaults(suiteName: "group.com.steipete.codexbar")
     static let mergedOverviewProviderLimit = 3
     static let isRunningTests: Bool = {
@@ -71,16 +70,16 @@ final class SettingsStore {
         return NSClassFromString("XCTestCase") != nil
     }()
 
-    @ObservationIgnored let userDefaults: UserDefaults
-    @ObservationIgnored let configStore: CodexBarConfigStore
-    @ObservationIgnored var config: CodexBarConfig
-    @ObservationIgnored var configPersistTask: Task<Void, Never>?
-    @ObservationIgnored var configLoading = false
-    @ObservationIgnored var tokenAccountsLoaded = false
+    let userDefaults: UserDefaults
+    let configStore: CodexBarConfigStore
+    @Published var config: CodexBarConfig
+    var configPersistTask: Task<Void, Never>?
+    @Published var configLoading = false
+    @Published var tokenAccountsLoaded = false
     var defaultsState: SettingsDefaultsState
-    var configRevision: Int = 0
-    var providerOrder: [UsageProvider] = []
-    var providerEnablement: [UsageProvider: Bool] = [:]
+    @Published var configRevision: Int = 0
+    @Published var providerOrder: [UsageProvider] = []
+    @Published var providerEnablement: [UsageProvider: Bool] = [:]
 
     init(
         userDefaults: UserDefaults = .standard,

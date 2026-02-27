@@ -37,7 +37,7 @@ public enum ClaudeOAuthCredentialsStore {
     private static let claudeKeychainFingerprintKey = "ClaudeOAuthClaudeKeychainFingerprintV2"
     private static let claudeKeychainFingerprintLegacyKey = "ClaudeOAuthClaudeKeychainFingerprintV1"
     private static let claudeKeychainChangeCheckLock = NSLock()
-    private nonisolated(unsafe) static var lastClaudeKeychainChangeCheckAt: Date?
+    private static var lastClaudeKeychainChangeCheckAt: Date?
     private static let claudeKeychainChangeCheckMinimumInterval: TimeInterval = 60
     private static let reauthenticateHint = "Run `claude` to re-authenticate."
 
@@ -64,15 +64,15 @@ public enum ClaudeOAuthCredentialsStore {
         }
     }
 
-    private nonisolated(unsafe) static var credentialsURLOverride: URL?
+    private static var credentialsURLOverride: URL?
     #if DEBUG
     @TaskLocal private static var taskCredentialsURLOverride: URL?
     #endif
     @TaskLocal static var allowBackgroundPromptBootstrap: Bool = false
     // In-memory cache (nonisolated for synchronous access)
     private static let memoryCacheLock = NSLock()
-    private nonisolated(unsafe) static var cachedCredentialRecord: ClaudeOAuthCredentialRecord?
-    private nonisolated(unsafe) static var cacheTimestamp: Date?
+    private static var cachedCredentialRecord: ClaudeOAuthCredentialRecord?
+    private static var cacheTimestamp: Date?
     private static let memoryCacheValidityDuration: TimeInterval = 1800
 
     private static func readMemoryCache() -> (record: ClaudeOAuthCredentialRecord?, timestamp: Date?) {
@@ -337,12 +337,13 @@ public enum ClaudeOAuthCredentialsStore {
                         service: self.claudeKeychainService,
                         account: nil))
             }
-            let keychainData: Data = if shouldPreferSecurityCLIKeychainRead {
-                try self.loadFromClaudeKeychainUsingSecurityFramework(
+            let keychainData: Data
+            if shouldPreferSecurityCLIKeychainRead {
+                keychainData = try self.loadFromClaudeKeychainUsingSecurityFramework(
                     promptMode: fallbackPromptMode,
                     allowKeychainPrompt: true)
             } else {
-                try self.loadFromClaudeKeychain()
+                keychainData = try self.loadFromClaudeKeychain()
             }
             let creds = try ClaudeOAuthCredentials.parse(data: keychainData)
             let record = ClaudeOAuthCredentialRecord(
@@ -390,10 +391,11 @@ public enum ClaudeOAuthCredentialsStore {
         expiryMetadata["respectPromptCooldown"] = "\(respectKeychainPromptCooldown)"
         expiryMetadata["readStrategy"] = ClaudeOAuthKeychainReadStrategyPreference.current().rawValue
 
-        let isExpired: Bool = if let expiresAt = credentials.expiresAt {
-            now >= expiresAt
+        let isExpired: Bool
+        if let expiresAt = credentials.expiresAt {
+            isExpired = now >= expiresAt
         } else {
-            true
+            isExpired = true
         }
 
         // If not expired, return as-is
@@ -1610,15 +1612,15 @@ extension ClaudeOAuthCredentialsStore {
     private static func shouldShowClaudeKeychainPreAlert() -> Bool {
         let mode = ClaudeOAuthKeychainPromptPreference.current()
         guard self.shouldAllowClaudeCodeKeychainAccess(mode: mode) else { return false }
-        return switch KeychainAccessPreflight.checkGenericPassword(service: self.claudeKeychainService, account: nil) {
+        switch KeychainAccessPreflight.checkGenericPassword(service: self.claudeKeychainService, account: nil) {
         case .interactionRequired:
-            true
+            return true
         case .failure:
             // If preflight fails, we can't be sure whether interaction is required (or if the preflight itself
             // is impacted by a misbehaving Keychain configuration). Be conservative and show the pre-alert.
-            true
+            return true
         case .allowed, .notFound:
-            false
+            return false
         }
     }
 
@@ -1658,13 +1660,14 @@ extension ClaudeOAuthCredentialsStore {
     {
         guard ClaudeOAuthRefreshFailureGate.shouldAttempt() else {
             let status = ClaudeOAuthRefreshFailureGate.currentBlockStatus()
-            let message = switch status {
+            let message: String
+            switch status {
             case .terminal:
-                "Claude OAuth refresh blocked until auth changes. \(self.reauthenticateHint)"
+                message = "Claude OAuth refresh blocked until auth changes. \(self.reauthenticateHint)"
             case .transient:
-                "Claude OAuth refresh temporarily backed off due to prior failures; will retry automatically."
+                message = "Claude OAuth refresh temporarily backed off due to prior failures; will retry automatically."
             case nil:
-                "Claude OAuth refresh temporarily suppressed due to prior failures; will retry automatically."
+                message = "Claude OAuth refresh temporarily suppressed due to prior failures; will retry automatically."
             }
             throw ClaudeOAuthCredentialsError.refreshFailed(message)
         }

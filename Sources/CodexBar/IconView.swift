@@ -43,7 +43,7 @@ struct IconView: View {
                     .interpolation(.none)
                     .frame(width: 20, height: 18, alignment: .center)
                     .padding(.horizontal, 2)
-                    .onChange(of: self.displayLink.tick) { _, _ in
+                    .onChange(of: self.displayLink.tick) { _ in
                         self.phase += 0.09 // half-speed animation
                         if self.debugCycle {
                             self.cycleCounter += 1
@@ -68,7 +68,7 @@ struct IconView: View {
                     .padding(.horizontal, 2)
             }
         }
-        .onChange(of: self.isLoading, initial: true) { _, isLoading in
+        .onChange(of: self.isLoading) { isLoading in
             if isLoading {
                 self.displayLink.start(fps: self.loadingFPS)
                 if !self.debugCycle {
@@ -78,6 +78,14 @@ struct IconView: View {
                 self.displayLink.stop()
                 self.debugCycle = false
                 self.phase = 0
+            }
+        }
+        .onAppear {
+            if self.isLoading {
+                self.displayLink.start(fps: self.loadingFPS)
+                if !self.debugCycle {
+                    self.pattern = self.patterns.randomElement() ?? .knightRider
+                }
             }
         }
         .onDisappear { self.displayLink.stop() }

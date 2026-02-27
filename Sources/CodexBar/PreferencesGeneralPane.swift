@@ -4,8 +4,8 @@ import SwiftUI
 
 @MainActor
 struct GeneralPane: View {
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @ObservedObject var settings: SettingsStore
+    @ObservedObject var store: UsageStore
 
     var body: some View {
         ScrollView(.vertical, showsIndicators: true) {

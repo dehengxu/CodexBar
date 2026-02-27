@@ -4,8 +4,8 @@ import SwiftUI
 
 @MainActor
 struct ProvidersPane: View {
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @ObservedObject var settings: SettingsStore
+    @ObservedObject var store: UsageStore
     @State private var expandedErrors: Set<UsageProvider> = []
     @State private var settingsStatusTextByID: [String: String] = [:]
     @State private var settingsLastAppActiveRunAtByID: [String: Date] = [:]
@@ -59,7 +59,7 @@ struct ProvidersPane: View {
         .onAppear {
             self.ensureSelection()
         }
-        .onChange(of: self.providers) { _, _ in
+        .onChange(of: self.providers) { _ in
             self.ensureSelection()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in

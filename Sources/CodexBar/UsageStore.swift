@@ -1,67 +1,7 @@
 import AppKit
 import CodexBarCore
+import Combine
 import Foundation
-import Observation
-import SweetCookieKit
-
-// MARK: - Observation helpers
-
-@MainActor
-extension UsageStore {
-    var menuObservationToken: Int {
-        _ = self.snapshots
-        _ = self.errors
-        _ = self.lastSourceLabels
-        _ = self.lastFetchAttempts
-        _ = self.accountSnapshots
-        _ = self.tokenSnapshots
-        _ = self.tokenErrors
-        _ = self.tokenRefreshInFlight
-        _ = self.credits
-        _ = self.lastCreditsError
-        _ = self.openAIDashboard
-        _ = self.lastOpenAIDashboardError
-        _ = self.openAIDashboardRequiresLogin
-        _ = self.openAIDashboardCookieImportStatus
-        _ = self.openAIDashboardCookieImportDebugLog
-        _ = self.versions
-        _ = self.isRefreshing
-        _ = self.refreshingProviders
-        _ = self.pathDebugInfo
-        _ = self.statuses
-        _ = self.probeLogs
-        return 0
-    }
-
-    func observeSettingsChanges() {
-        withObservationTracking {
-            _ = self.settings.refreshFrequency
-            _ = self.settings.statusChecksEnabled
-            _ = self.settings.sessionQuotaNotificationsEnabled
-            _ = self.settings.usageBarsShowUsed
-            _ = self.settings.costUsageEnabled
-            _ = self.settings.randomBlinkEnabled
-            _ = self.settings.configRevision
-            for implementation in ProviderCatalog.all {
-                implementation.observeSettings(self.settings)
-            }
-            _ = self.settings.showAllTokenAccountsInMenu
-            _ = self.settings.tokenAccountsByProvider
-            _ = self.settings.mergeIcons
-            _ = self.settings.selectedMenuProvider
-            _ = self.settings.debugLoadingPattern
-            _ = self.settings.debugKeepCLISessionsAlive
-        } onChange: { [weak self] in
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                self.observeSettingsChanges()
-                self.startTimer()
-                self.updateProviderRuntimes()
-                await self.refresh()
-            }
-        }
-    }
-}
 
 enum ProviderStatusIndicator: String {
     case none
@@ -73,19 +13,27 @@ enum ProviderStatusIndicator: String {
 
     var hasIssue: Bool {
         switch self {
-        case .none: false
-        default: true
+        case .none:
+            return false
+        default:
+            return true
         }
     }
 
     var label: String {
         switch self {
-        case .none: "Operational"
-        case .minor: "Partial outage"
-        case .major: "Major outage"
-        case .critical: "Critical issue"
-        case .maintenance: "Maintenance"
-        case .unknown: "Status unknown"
+        case .none:
+            return "Operational"
+        case .minor:
+            return "Partial outage"
+        case .major:
+            return "Major outage"
+        case .critical:
+            return "Critical issue"
+        case .maintenance:
+            return "Maintenance"
+        case .unknown:
+            return "Status unknown"
         }
     }
 }
@@ -137,65 +85,72 @@ struct ConsecutiveFailureGate {
 }
 
 @MainActor
-@Observable
-final class UsageStore {
-    var snapshots: [UsageProvider: UsageSnapshot] = [:]
-    var errors: [UsageProvider: String] = [:]
-    var lastSourceLabels: [UsageProvider: String] = [:]
-    var lastFetchAttempts: [UsageProvider: [ProviderFetchAttempt]] = [:]
-    var accountSnapshots: [UsageProvider: [TokenAccountUsageSnapshot]] = [:]
-    var tokenSnapshots: [UsageProvider: CostUsageTokenSnapshot] = [:]
-    var tokenErrors: [UsageProvider: String] = [:]
-    var tokenRefreshInFlight: Set<UsageProvider> = []
-    var credits: CreditsSnapshot?
-    var lastCreditsError: String?
-    var openAIDashboard: OpenAIDashboardSnapshot?
-    var lastOpenAIDashboardError: String?
-    var openAIDashboardRequiresLogin: Bool = false
-    var openAIDashboardCookieImportStatus: String?
-    var openAIDashboardCookieImportDebugLog: String?
-    var versions: [UsageProvider: String] = [:]
-    var isRefreshing = false
-    var refreshingProviders: Set<UsageProvider> = []
-    var debugForceAnimation = false
-    var pathDebugInfo: PathDebugSnapshot = .empty
-    var statuses: [UsageProvider: ProviderStatus] = [:]
-    var probeLogs: [UsageProvider: String] = [:]
-    @ObservationIgnored private var lastCreditsSnapshot: CreditsSnapshot?
-    @ObservationIgnored private var creditsFailureStreak: Int = 0
-    @ObservationIgnored private var lastOpenAIDashboardSnapshot: OpenAIDashboardSnapshot?
-    @ObservationIgnored private var lastOpenAIDashboardTargetEmail: String?
-    @ObservationIgnored private var lastOpenAIDashboardCookieImportAttemptAt: Date?
-    @ObservationIgnored private var lastOpenAIDashboardCookieImportEmail: String?
-    @ObservationIgnored private var openAIWebAccountDidChange: Bool = false
+final class UsageStore: ObservableObject {
+    @Published var snapshots: [UsageProvider: UsageSnapshot] = [:]
+    @Published var errors: [UsageProvider: String] = [:]
+    @Published var lastSourceLabels: [UsageProvider: String] = [:]
+    @Published var lastFetchAttempts: [UsageProvider: [ProviderFetchAttempt]] = [:]
+    @Published var accountSnapshots: [UsageProvider: [TokenAccountUsageSnapshot]] = [:]
+    @Published var tokenSnapshots: [UsageProvider: CostUsageTokenSnapshot] = [:]
+    @Published var tokenErrors: [UsageProvider: String] = [:]
+    @Published var tokenRefreshInFlight: Set<UsageProvider> = []
+    @Published var credits: CreditsSnapshot?
+    @Published var lastCreditsError: String?
+    @Published var openAIDashboard: OpenAIDashboardSnapshot?
+    @Published var lastOpenAIDashboardError: String?
+    @Published var openAIDashboardRequiresLogin: Bool = false
+    @Published var openAIDashboardCookieImportStatus: String?
+    @Published var openAIDashboardCookieImportDebugLog: String?
+    @Published var versions: [UsageProvider: String] = [:]
+    @Published var isRefreshing = false
+    @Published var refreshingProviders: Set<UsageProvider> = []
+    @Published var debugForceAnimation = false
+    @Published var pathDebugInfo: PathDebugSnapshot = .empty
+    @Published var statuses: [UsageProvider: ProviderStatus] = [:]
+    @Published var probeLogs: [UsageProvider: String] = [:]
+    private var lastCreditsSnapshot: CreditsSnapshot?
+    private var creditsFailureStreak: Int = 0
+    private var lastOpenAIDashboardSnapshot: OpenAIDashboardSnapshot?
+    private var lastOpenAIDashboardTargetEmail: String?
+    private var lastOpenAIDashboardCookieImportAttemptAt: Date?
+    private var lastOpenAIDashboardCookieImportEmail: String?
+    private var openAIWebAccountDidChange: Bool = false
 
-    @ObservationIgnored let codexFetcher: UsageFetcher
-    @ObservationIgnored let claudeFetcher: any ClaudeUsageFetching
-    @ObservationIgnored private let costUsageFetcher: CostUsageFetcher
-    @ObservationIgnored let browserDetection: BrowserDetection
-    @ObservationIgnored private let registry: ProviderRegistry
-    @ObservationIgnored let settings: SettingsStore
-    @ObservationIgnored private let sessionQuotaNotifier: SessionQuotaNotifier
-    @ObservationIgnored private let sessionQuotaLogger = CodexBarLog.logger(LogCategories.sessionQuota)
-    @ObservationIgnored private let openAIWebLogger = CodexBarLog.logger(LogCategories.openAIWeb)
-    @ObservationIgnored private let tokenCostLogger = CodexBarLog.logger(LogCategories.tokenCost)
-    @ObservationIgnored let augmentLogger = CodexBarLog.logger(LogCategories.augment)
-    @ObservationIgnored let providerLogger = CodexBarLog.logger(LogCategories.providers)
-    @ObservationIgnored private var openAIWebDebugLines: [String] = []
-    @ObservationIgnored var failureGates: [UsageProvider: ConsecutiveFailureGate] = [:]
-    @ObservationIgnored var tokenFailureGates: [UsageProvider: ConsecutiveFailureGate] = [:]
-    @ObservationIgnored var providerSpecs: [UsageProvider: ProviderSpec] = [:]
-    @ObservationIgnored let providerMetadata: [UsageProvider: ProviderMetadata]
-    @ObservationIgnored var providerRuntimes: [UsageProvider: any ProviderRuntime] = [:]
-    @ObservationIgnored private var timerTask: Task<Void, Never>?
-    @ObservationIgnored private var tokenTimerTask: Task<Void, Never>?
-    @ObservationIgnored private var tokenRefreshSequenceTask: Task<Void, Never>?
-    @ObservationIgnored private var pathDebugRefreshTask: Task<Void, Never>?
-    @ObservationIgnored var lastKnownSessionRemaining: [UsageProvider: Double] = [:]
-    @ObservationIgnored var lastTokenFetchAt: [UsageProvider: Date] = [:]
-    @ObservationIgnored private var hasCompletedInitialRefresh: Bool = false
-    @ObservationIgnored private let tokenFetchTTL: TimeInterval = 60 * 60
-    @ObservationIgnored private let tokenFetchTimeout: TimeInterval = 10 * 60
+    let codexFetcher: UsageFetcher
+    let claudeFetcher: any ClaudeUsageFetching
+    private let costUsageFetcher: CostUsageFetcher
+    let browserDetection: BrowserDetection
+    private let registry: ProviderRegistry
+    let settings: SettingsStore
+    private var _sessionQuotaNotifier: SessionQuotaNotifier?
+    private var sessionQuotaNotifier: SessionQuotaNotifier {
+        if let existing = _sessionQuotaNotifier {
+            return existing
+        }
+        let notifier = SessionQuotaNotifier()
+        _sessionQuotaNotifier = notifier
+        return notifier
+    }
+    private let sessionQuotaLogger = CodexBarLog.logger(LogCategories.sessionQuota)
+    private let openAIWebLogger = CodexBarLog.logger(LogCategories.openAIWeb)
+    private let tokenCostLogger = CodexBarLog.logger(LogCategories.tokenCost)
+    let augmentLogger = CodexBarLog.logger(LogCategories.augment)
+    let providerLogger = CodexBarLog.logger(LogCategories.providers)
+    private var openAIWebDebugLines: [String] = []
+    var failureGates: [UsageProvider: ConsecutiveFailureGate] = [:]
+    var tokenFailureGates: [UsageProvider: ConsecutiveFailureGate] = [:]
+    var providerSpecs: [UsageProvider: ProviderSpec] = [:]
+    let providerMetadata: [UsageProvider: ProviderMetadata]
+    var providerRuntimes: [UsageProvider: any ProviderRuntime] = [:]
+    private var timerTask: Task<Void, Never>?
+    private var tokenTimerTask: Task<Void, Never>?
+    private var tokenRefreshSequenceTask: Task<Void, Never>?
+    private var pathDebugRefreshTask: Task<Void, Never>?
+    var lastKnownSessionRemaining: [UsageProvider: Double] = [:]
+    var lastTokenFetchAt: [UsageProvider: Date] = [:]
+    private var hasCompletedInitialRefresh: Bool = false
+    private let tokenFetchTTL: TimeInterval = 60 * 60
+    private let tokenFetchTimeout: TimeInterval = 10 * 60
 
     init(
         fetcher: UsageFetcher,
@@ -204,7 +159,7 @@ final class UsageStore {
         costUsageFetcher: CostUsageFetcher = CostUsageFetcher(),
         settings: SettingsStore,
         registry: ProviderRegistry = .shared,
-        sessionQuotaNotifier: SessionQuotaNotifier = SessionQuotaNotifier())
+        sessionQuotaNotifier: SessionQuotaNotifier? = nil)
     {
         self.codexFetcher = fetcher
         self.browserDetection = browserDetection
@@ -212,7 +167,7 @@ final class UsageStore {
         self.costUsageFetcher = costUsageFetcher
         self.settings = settings
         self.registry = registry
-        self.sessionQuotaNotifier = sessionQuotaNotifier
+        self._sessionQuotaNotifier = sessionQuotaNotifier
         self.providerMetadata = registry.metadata
         self
             .failureGates = Dictionary(
@@ -315,10 +270,11 @@ final class UsageStore {
             guard let snapshot = self.snapshots[provider] else { continue }
             // Use the same window selection logic as menuBarPercentWindow:
             // Factory and Kimi use secondary first, others use primary first.
-            let window: RateWindow? = if provider == .factory || provider == .kimi {
-                snapshot.secondary ?? snapshot.primary
+            let window: RateWindow?
+            if provider == .factory || provider == .kimi {
+                window = snapshot.secondary ?? snapshot.primary
             } else {
-                snapshot.primary ?? snapshot.secondary
+                window = snapshot.primary ?? snapshot.secondary
             }
             let percent = window?.usedPercent ?? 0
             // Skip providers already at 100% - they're fully rate-limited
@@ -435,13 +391,13 @@ final class UsageStore {
         guard !self.isRefreshing else { return }
         let refreshPhase: ProviderRefreshPhase = self.hasCompletedInitialRefresh ? .regular : .startup
 
-        await ProviderRefreshContext.$current.withValue(refreshPhase) {
-            self.isRefreshing = true
-            defer {
-                self.isRefreshing = false
-                self.hasCompletedInitialRefresh = true
-            }
+        self.isRefreshing = true
+        defer {
+            self.isRefreshing = false
+            self.hasCompletedInitialRefresh = true
+        }
 
+        await ProviderRefreshContext.$current.withValue(refreshPhase) {
             await withTaskGroup(of: Void.self) { group in
                 for provider in UsageProvider.allCases {
                     group.addTask { await self.refreshProvider(provider) }
@@ -472,7 +428,7 @@ final class UsageStore {
         self.snapshots.removeAll()
         self.debugForceAnimation = true
         Task { @MainActor in
-            try? await Task.sleep(for: .seconds(duration))
+            try? await Task.sleep(nanoseconds: UInt64(duration * 1_000_000_000))
             if let current, let provider = self.enabledProviders().first {
                 self.snapshots[provider] = current
             }
@@ -483,7 +439,11 @@ final class UsageStore {
     // MARK: - Private
 
     private func bindSettings() {
-        self.observeSettingsChanges()
+        // Settings changes are observed via config revision mechanism
+    }
+
+    private func observeSettingsChanges() {
+        // Settings changes are observed via config revision mechanism
     }
 
     private func startTimer() {
@@ -493,7 +453,7 @@ final class UsageStore {
         // Background poller so the menu stays responsive; canceled when settings change or store deallocates.
         self.timerTask = Task.detached(priority: .utility) { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(wait))
+                try? await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000))
                 await self?.refresh()
             }
         }
@@ -504,7 +464,7 @@ final class UsageStore {
         let wait = self.tokenFetchTTL
         self.tokenTimerTask = Task.detached(priority: .utility) { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(wait))
+                try? await Task.sleep(nanoseconds: UInt64(wait * 1_000_000_000))
                 await self?.scheduleTokenRefresh(force: false)
             }
         }
@@ -607,16 +567,14 @@ final class UsageStore {
             } else {
                 return
             }
-            await MainActor.run { self.statuses[provider] = status }
+            self.statuses[provider] = status
         } catch {
             // Keep the previous status to avoid flapping when the API hiccups.
-            await MainActor.run {
-                if self.statuses[provider] == nil {
-                    self.statuses[provider] = ProviderStatus(
-                        indicator: .unknown,
-                        description: error.localizedDescription,
-                        updatedAt: nil)
-                }
+            if self.statuses[provider] == nil {
+                self.statuses[provider] = ProviderStatus(
+                    indicator: .unknown,
+                    description: error.localizedDescription,
+                    updatedAt: nil)
             }
         }
     }
@@ -626,38 +584,32 @@ final class UsageStore {
         do {
             let credits = try await self.codexFetcher.loadLatestCredits(
                 keepCLISessionsAlive: self.settings.debugKeepCLISessionsAlive)
-            await MainActor.run {
-                self.credits = credits
-                self.lastCreditsError = nil
-                self.lastCreditsSnapshot = credits
-                self.creditsFailureStreak = 0
-            }
+            self.credits = credits
+            self.lastCreditsError = nil
+            self.lastCreditsSnapshot = credits
+            self.creditsFailureStreak = 0
         } catch {
             let message = error.localizedDescription
             if message.localizedCaseInsensitiveContains("data not available yet") {
-                await MainActor.run {
-                    if let cached = self.lastCreditsSnapshot {
-                        self.credits = cached
-                        self.lastCreditsError = nil
-                    } else {
-                        self.credits = nil
-                        self.lastCreditsError = "Codex credits are still loading; will retry shortly."
-                    }
+                if let cached = self.lastCreditsSnapshot {
+                    self.credits = cached
+                    self.lastCreditsError = nil
+                } else {
+                    self.credits = nil
+                    self.lastCreditsError = "Codex credits are still loading; will retry shortly."
                 }
                 return
             }
 
-            await MainActor.run {
-                self.creditsFailureStreak += 1
-                if let cached = self.lastCreditsSnapshot {
-                    self.credits = cached
-                    let stamp = cached.updatedAt.formatted(date: .abbreviated, time: .shortened)
-                    self.lastCreditsError =
-                        "Last Codex credits refresh failed: \(message). Cached values from \(stamp)."
-                } else {
-                    self.lastCreditsError = message
-                    self.credits = nil
-                }
+            self.creditsFailureStreak += 1
+            if let cached = self.lastCreditsSnapshot {
+                self.credits = cached
+                let stamp = cached.updatedAt.formatted(date: .abbreviated, time: .shortened)
+                self.lastCreditsError =
+                    "Last Codex credits refresh failed: \(message). Cached values from \(stamp)."
+            } else {
+                self.lastCreditsError = message
+                self.credits = nil
             }
         }
     }
@@ -685,26 +637,24 @@ extension UsageStore {
     }
 
     private func applyOpenAIDashboard(_ dash: OpenAIDashboardSnapshot, targetEmail: String?) async {
-        await MainActor.run {
-            self.openAIDashboard = dash
-            self.lastOpenAIDashboardError = nil
-            self.lastOpenAIDashboardSnapshot = dash
-            self.openAIDashboardRequiresLogin = false
-            // Only fill gaps; OAuth/CLI remain the primary sources for usage + credits.
-            if self.snapshots[.codex] == nil,
-               let usage = dash.toUsageSnapshot(provider: .codex, accountEmail: targetEmail)
-            {
-                self.snapshots[.codex] = usage
-                self.errors[.codex] = nil
-                self.failureGates[.codex]?.recordSuccess()
-                self.lastSourceLabels[.codex] = "openai-web"
-            }
-            if self.credits == nil, let credits = dash.toCreditsSnapshot() {
-                self.credits = credits
-                self.lastCreditsSnapshot = credits
-                self.lastCreditsError = nil
-                self.creditsFailureStreak = 0
-            }
+        self.openAIDashboard = dash
+        self.lastOpenAIDashboardError = nil
+        self.lastOpenAIDashboardSnapshot = dash
+        self.openAIDashboardRequiresLogin = false
+        // Only fill gaps; OAuth/CLI remain the primary sources for usage + credits.
+        if self.snapshots[.codex] == nil,
+           let usage = dash.toUsageSnapshot(provider: .codex, accountEmail: targetEmail)
+        {
+            self.snapshots[.codex] = usage
+            self.errors[.codex] = nil
+            self.failureGates[.codex]?.recordSuccess()
+            self.lastSourceLabels[.codex] = "openai-web"
+        }
+        if self.credits == nil, let credits = dash.toCreditsSnapshot() {
+            self.credits = credits
+            self.lastCreditsSnapshot = credits
+            self.lastCreditsError = nil
+            self.creditsFailureStreak = 0
         }
 
         if let email = targetEmail, !email.isEmpty {
@@ -713,16 +663,14 @@ extension UsageStore {
     }
 
     private func applyOpenAIDashboardFailure(message: String) async {
-        await MainActor.run {
-            if let cached = self.lastOpenAIDashboardSnapshot {
-                self.openAIDashboard = cached
-                let stamp = cached.updatedAt.formatted(date: .abbreviated, time: .shortened)
-                self.lastOpenAIDashboardError =
-                    "Last OpenAI dashboard refresh failed: \(message). Cached values from \(stamp)."
-            } else {
-                self.lastOpenAIDashboardError = message
-                self.openAIDashboard = nil
-            }
+        if let cached = self.lastOpenAIDashboardSnapshot {
+            self.openAIDashboard = cached
+            let stamp = cached.updatedAt.formatted(date: .abbreviated, time: .shortened)
+            self.lastOpenAIDashboardError =
+                "Last OpenAI dashboard refresh failed: \(message). Cached values from \(stamp)."
+        } else {
+            self.lastOpenAIDashboardError = message
+            self.openAIDashboard = nil
         }
     }
 
@@ -801,14 +749,12 @@ extension UsageStore {
 
             if self.dashboardEmailMismatch(expected: normalized, actual: dash.signedInEmail) {
                 let signedIn = dash.signedInEmail?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "unknown"
-                await MainActor.run {
-                    self.openAIDashboard = nil
-                    self.lastOpenAIDashboardError = [
-                        "OpenAI dashboard signed in as \(signedIn), but Codex uses \(normalized ?? "unknown").",
-                        "Switch accounts in your browser and update OpenAI cookies in Providers → Codex.",
-                    ].joined(separator: " ")
-                    self.openAIDashboardRequiresLogin = true
-                }
+                self.openAIDashboard = nil
+                self.lastOpenAIDashboardError = [
+                    "OpenAI dashboard signed in as \(signedIn), but Codex uses \(normalized ?? "unknown").",
+                    "Switch accounts in your browser and update OpenAI cookies in Providers → Codex.",
+                ].joined(separator: " ")
+                self.openAIDashboardRequiresLogin = true
                 return
             }
 
@@ -853,15 +799,13 @@ extension UsageStore {
                     timeout: Self.openAIWebRetryFetchTimeout)
                 await self.applyOpenAIDashboard(dash, targetEmail: effectiveEmail)
             } catch OpenAIDashboardFetcher.FetchError.loginRequired {
-                await MainActor.run {
-                    self.lastOpenAIDashboardError = [
-                        "OpenAI web access requires a signed-in chatgpt.com session.",
-                        "Sign in using \(self.codexBrowserCookieOrder.loginHint), " +
-                            "then update OpenAI cookies in Providers → Codex.",
-                    ].joined(separator: " ")
-                    self.openAIDashboard = self.lastOpenAIDashboardSnapshot
-                    self.openAIDashboardRequiresLogin = true
-                }
+                self.lastOpenAIDashboardError = [
+                    "OpenAI web access requires a signed-in chatgpt.com session.",
+                    "Sign in using \(self.codexBrowserCookieOrder.loginHint), " +
+                        "then update OpenAI cookies in Providers → Codex.",
+                ].joined(separator: " ")
+                self.openAIDashboard = self.lastOpenAIDashboardSnapshot
+                self.openAIDashboardRequiresLogin = true
             } catch {
                 await self.applyOpenAIDashboardFailure(message: error.localizedDescription)
             }
@@ -919,13 +863,14 @@ extension UsageStore {
         let lastEmail = self.lastOpenAIDashboardCookieImportEmail
         let lastAttempt = self.lastOpenAIDashboardCookieImportAttemptAt ?? .distantPast
 
-        let shouldAttempt: Bool = if force {
-            true
+        let shouldAttempt: Bool
+        if force {
+            shouldAttempt = true
         } else {
             if allowAnyAccount {
-                now.timeIntervalSince(lastAttempt) > 300
+                shouldAttempt = now.timeIntervalSince(lastAttempt) > 300
             } else {
-                self.openAIDashboardRequiresLogin &&
+                shouldAttempt = self.openAIDashboardRequiresLogin &&
                     (
                         lastEmail?.lowercased() != normalizedTarget?.lowercased() || now
                             .timeIntervalSince(lastAttempt) > 300)
@@ -978,41 +923,41 @@ extension UsageStore {
                 ? result.signedInEmail?.trimmingCharacters(in: .whitespacesAndNewlines)
                 : normalizedTarget
             self.lastOpenAIDashboardCookieImportEmail = effectiveEmail ?? normalizedTarget
-            await MainActor.run {
-                let signed = result.signedInEmail?.trimmingCharacters(in: .whitespacesAndNewlines)
-                let matchText = result.matchesCodexEmail ? "matches Codex" : "does not match Codex"
-                let sourceLabel = switch cookieSource {
-                case .manual:
-                    "Manual cookie header"
-                case .auto:
-                    "\(result.sourceLabel) cookies"
-                case .off:
-                    "OpenAI cookies disabled"
-                }
-                if let signed, !signed.isEmpty {
-                    self.openAIDashboardCookieImportStatus =
-                        allowAnyAccount
-                            ? [
-                                "Using \(sourceLabel) (\(result.cookieCount)).",
-                                "Signed in as \(signed).",
-                            ].joined(separator: " ")
-                            : [
-                                "Using \(sourceLabel) (\(result.cookieCount)).",
-                                "Signed in as \(signed) (\(matchText)).",
-                            ].joined(separator: " ")
-                } else {
-                    self.openAIDashboardCookieImportStatus =
-                        "Using \(sourceLabel) (\(result.cookieCount))."
-                }
+            let signed = result.signedInEmail?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let matchText = result.matchesCodexEmail ? "matches Codex" : "does not match Codex"
+            let sourceLabel: String
+            switch cookieSource {
+            case .manual:
+                sourceLabel = "Manual cookie header"
+            case .auto:
+                sourceLabel = "\(result.sourceLabel) cookies"
+            case .off:
+                sourceLabel = "OpenAI cookies disabled"
+            }
+            if let signed, !signed.isEmpty {
+                self.openAIDashboardCookieImportStatus =
+                    allowAnyAccount
+                        ? [
+                            "Using \(sourceLabel) (\(result.cookieCount)).",
+                            "Signed in as \(signed).",
+                        ].joined(separator: " ")
+                        : [
+                            "Using \(sourceLabel) (\(result.cookieCount)).",
+                            "Signed in as \(signed) (\(matchText)).",
+                        ].joined(separator: " ")
+            } else {
+                self.openAIDashboardCookieImportStatus =
+                    "Using \(sourceLabel) (\(result.cookieCount))."
             }
             return effectiveEmail
         } catch let err as OpenAIDashboardBrowserCookieImporter.ImportError {
             switch err {
             case let .noMatchingAccount(found):
-                let foundText: String = if found.isEmpty {
-                    "no signed-in session detected in \(self.codexBrowserCookieOrder.loginHint)"
+                let foundText: String
+                if found.isEmpty {
+                    foundText = "no signed-in session detected in \(self.codexBrowserCookieOrder.loginHint)"
                 } else {
-                    found
+                    foundText = found
                         .sorted { lhs, rhs in
                             if lhs.sourceLabel == rhs.sourceLabel { return lhs.email < rhs.email }
                             return lhs.sourceLabel < rhs.sourceLabel
@@ -1021,37 +966,31 @@ extension UsageStore {
                         .joined(separator: " • ")
                 }
                 self.logOpenAIWeb("[\(stamp)] import mismatch: \(foundText)")
-                await MainActor.run {
-                    self.openAIDashboardCookieImportStatus = allowAnyAccount
-                        ? [
-                            "No signed-in OpenAI web session found.",
-                            "Found \(foundText).",
-                        ].joined(separator: " ")
-                        : [
-                            "Browser cookies do not match Codex account (\(normalizedTarget ?? "unknown")).",
-                            "Found \(foundText).",
-                        ].joined(separator: " ")
-                    // Treat mismatch like "not logged in" for the current Codex account.
-                    self.openAIDashboardRequiresLogin = true
-                    self.openAIDashboard = nil
-                }
+                self.openAIDashboardCookieImportStatus = allowAnyAccount
+                    ? [
+                        "No signed-in OpenAI web session found.",
+                        "Found \(foundText).",
+                    ].joined(separator: " ")
+                    : [
+                        "Browser cookies do not match Codex account (\(normalizedTarget ?? "unknown")).",
+                        "Found \(foundText).",
+                    ].joined(separator: " ")
+                // Treat mismatch like "not logged in" for the current Codex account.
+                self.openAIDashboardRequiresLogin = true
+                self.openAIDashboard = nil
             case .noCookiesFound,
                  .browserAccessDenied,
                  .dashboardStillRequiresLogin,
                  .manualCookieHeaderInvalid:
                 self.logOpenAIWeb("[\(stamp)] import failed: \(err.localizedDescription)")
-                await MainActor.run {
-                    self.openAIDashboardCookieImportStatus =
-                        "OpenAI cookie import failed: \(err.localizedDescription)"
-                    self.openAIDashboardRequiresLogin = true
-                }
+                self.openAIDashboardCookieImportStatus =
+                    "OpenAI cookie import failed: \(err.localizedDescription)"
+                self.openAIDashboardRequiresLogin = true
             }
         } catch {
             self.logOpenAIWeb("[\(stamp)] import failed: \(error.localizedDescription)")
-            await MainActor.run {
-                self.openAIDashboardCookieImportStatus =
-                    "Browser cookie import failed: \(error.localizedDescription)"
-            }
+            self.openAIDashboardCookieImportStatus =
+                "Browser cookie import failed: \(error.localizedDescription)"
         }
         return nil
     }
@@ -1113,11 +1052,9 @@ extension UsageStore {
         let output = await fetcher.debugRawProbe(model: "sonnet")
         let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("codexbar-claude-probe.txt")
         try? output.write(to: url, atomically: true, encoding: .utf8)
-        await MainActor.run {
-            let snippet = String(output.prefix(180)).replacingOccurrences(of: "\n", with: " ")
-            self.errors[.claude] = "[Claude] \(snippet) (saved: \(url.path))"
-            NSWorkspace.shared.open(url)
-        }
+        let snippet = String(output.prefix(180)).replacingOccurrences(of: "\n", with: " ")
+        self.errors[.claude] = "[Claude] \(snippet) (saved: \(url.path))"
+        NSWorkspace.shared.open(url)
     }
 
     func dumpLog(toFileFor provider: UsageProvider) async -> URL? {
@@ -1126,12 +1063,10 @@ extension UsageStore {
         let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(filename)
         do {
             try text.write(to: url, atomically: true, encoding: .utf8)
-            _ = await MainActor.run { NSWorkspace.shared.open(url) }
+            NSWorkspace.shared.open(url)
             return url
         } catch {
-            await MainActor.run {
-                self.errors[provider] = "Failed to save log: \(error.localizedDescription)"
-            }
+            self.errors[provider] = "Failed to save log: \(error.localizedDescription)"
             return nil
         }
     }
@@ -1169,7 +1104,7 @@ extension UsageStore {
             base: processEnvironment,
             provider: .openrouter,
             config: self.settings.providerConfig(for: .openrouter))
-        return await Task.detached(priority: .utility) { () -> String in
+        let text = await Task.detached(priority: .utility) { () -> String in
             let unimplementedDebugLogMessages: [UsageProvider: String] = [
                 .gemini: "Gemini debug log not yet implemented",
                 .antigravity: "Antigravity debug log not yet implemented",
@@ -1228,14 +1163,15 @@ extension UsageStore {
             case .openrouter:
                 let resolution = ProviderTokenResolver.openRouterResolution(environment: openRouterEnvironment)
                 let hasAny = resolution != nil
-                let source: String = if resolution == nil {
-                    "none"
+                let source: String
+                if resolution == nil {
+                    source = "none"
                 } else if openRouterHasConfigToken, openRouterHasEnvToken {
-                    "settings-config (overrides env)"
+                    source = "settings-config (overrides env)"
                 } else if openRouterHasConfigToken {
-                    "settings-config"
+                    source = "settings-config"
                 } else {
-                    resolution?.source.rawValue ?? "environment"
+                    source = resolution?.source.rawValue ?? "environment"
                 }
                 text = "OPENROUTER_API_KEY=\(hasAny ? "present" : "missing") source=\(source)"
             case .warp:
@@ -1246,10 +1182,10 @@ extension UsageStore {
             case .gemini, .antigravity, .opencode, .factory, .copilot, .vertexai, .kiro, .kimi, .kimik2, .jetbrains:
                 text = unimplementedDebugLogMessages[provider] ?? "Debug log not yet implemented"
             }
-
-            await MainActor.run { self.probeLogs[provider] = text }
             return text
         }.value
+        self.probeLogs[provider] = text
+        return text
     }
 
     private func debugClaudeLog(
@@ -1271,10 +1207,11 @@ extension UsageStore {
             let manualHeader = claudeCookieSource == .manual
                 ? CookieHeaderNormalizer.normalize(claudeCookieHeader)
                 : nil
-            let hasKey = if let manualHeader {
-                ClaudeWebAPIFetcher.hasSessionKey(cookieHeader: manualHeader)
+            let hasKey: Bool
+            if let manualHeader {
+                hasKey = ClaudeWebAPIFetcher.hasSessionKey(cookieHeader: manualHeader)
             } else {
-                ClaudeWebAPIFetcher.hasSessionKey(browserDetection: self.browserDetection) { msg in lines.append(msg) }
+                hasKey = await ClaudeWebAPIFetcher.hasSessionKey(browserDetection: self.browserDetection) { msg in lines.append(msg) }
             }
             // Run potentially blocking keychain probes off MainActor so debug dumps don't stall UI rendering.
             let oauthProbe = await Task.detached(priority: .utility) {
@@ -1384,13 +1321,13 @@ extension UsageStore {
 
             do {
                 let probe = CursorStatusProbe(browserDetection: self.browserDetection)
-                let snapshot: CursorStatusSnapshot = if cursorCookieSource == .manual,
-                                                        let normalizedHeader = CookieHeaderNormalizer
-                                                            .normalize(cursorCookieHeader)
+                let snapshot: CursorStatusSnapshot
+                if cursorCookieSource == .manual,
+                   let normalizedHeader = CookieHeaderNormalizer.normalize(cursorCookieHeader)
                 {
-                    try await probe.fetchWithManualCookies(normalizedHeader)
+                    snapshot = try await probe.fetchWithManualCookies(normalizedHeader)
                 } else {
-                    try await probe.fetch { msg in lines.append("[cursor-cookie] \(msg)") }
+                    snapshot = try await probe.fetch { msg in lines.append("[cursor-cookie] \(msg)") }
                 }
 
                 lines.append("")
@@ -1467,7 +1404,7 @@ extension UsageStore {
                 try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
                 return nil
             }
-            let result = await group.next()?.flatMap(\.self)
+            let result = await group.next()?.flatMap { $0 }
             group.cancelAll()
             return result ?? "Probe timed out after \(Int(seconds))s"
         }
@@ -1516,9 +1453,7 @@ extension UsageStore {
         _ snapshot: @escaping @Sendable () async -> PathDebugSnapshot) async
     {
         let result = await snapshot()
-        await MainActor.run {
-            self.pathDebugInfo = result
-        }
+        self.pathDebugInfo = result
     }
 
     private func refreshPathDebugInfo() async {

@@ -98,12 +98,12 @@ extension UsageStore {
 
     private static func indicatorRank(_ indicator: ProviderStatusIndicator) -> Int {
         switch indicator {
-        case .none: 0
-        case .maintenance: 1
-        case .minor: 2
-        case .major: 3
-        case .critical: 4
-        case .unknown: 1
+        case .none: return 0
+        case .maintenance: return 1
+        case .minor: return 2
+        case .major: return 3
+        case .critical: return 4
+        case .unknown: return 1
         }
     }
 

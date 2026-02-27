@@ -1,10 +1,8 @@
 import AppKit
 import CodexBarCore
-import CodexBarMacroSupport
 import Foundation
 import SwiftUI
 
-@ProviderImplementationRegistration
 struct AugmentProviderImplementation: ProviderImplementation {
     let id: UsageProvider = .augment
 
@@ -33,6 +31,7 @@ struct AugmentProviderImplementation: ProviderImplementation {
         }
     }
 
+    @MainActor
     func makeRuntime() -> (any ProviderRuntime)? {
         AugmentProviderRuntime()
     }

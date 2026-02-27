@@ -25,7 +25,6 @@ private enum ProviderMacroError {
             node: node,
             message: Message(
                 message: "\(typeName) must declare static let descriptor or static func makeDescriptor() " +
-                    "to use @ProviderDescriptorRegistration.",
                 diagnosticID: MessageID(domain: "CodexBarMacros", id: "missing_descriptor"),
                 severity: .error)))
     }
@@ -34,7 +33,6 @@ private enum ProviderMacroError {
         context.diagnose(Diagnostic(
             node: node,
             message: Message(
-                message: "\(typeName) must declare static func makeDescriptor() to use @ProviderDescriptorDefinition.",
                 diagnosticID: MessageID(domain: "CodexBarMacros", id: "missing_make_descriptor"),
                 severity: .error)))
     }
@@ -43,7 +41,6 @@ private enum ProviderMacroError {
         context.diagnose(Diagnostic(
             node: node,
             message: Message(
-                message: "\(typeName) already declares descriptor; remove @ProviderDescriptorDefinition.",
                 diagnosticID: MessageID(domain: "CodexBarMacros", id: "duplicate_descriptor"),
                 severity: .error)))
     }

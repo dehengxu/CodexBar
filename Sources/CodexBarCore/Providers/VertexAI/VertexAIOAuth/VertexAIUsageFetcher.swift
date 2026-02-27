@@ -14,17 +14,17 @@ public enum VertexAIFetchError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .unauthorized:
-            "Vertex AI request unauthorized. Run `gcloud auth application-default login`."
+            return "Vertex AI request unauthorized. Run `gcloud auth application-default login`."
         case .forbidden:
-            "Access forbidden. Check your IAM permissions for Cloud Monitoring."
+            return "Access forbidden. Check your IAM permissions for Cloud Monitoring."
         case .noProject:
-            "No Google Cloud project configured. Run `gcloud config set project PROJECT_ID`."
+            return "No Google Cloud project configured. Run `gcloud config set project PROJECT_ID`."
         case let .networkError(error):
-            "Vertex AI network error: \(error.localizedDescription)"
+            return "Vertex AI network error: \(error.localizedDescription)"
         case let .invalidResponse(message):
-            "Vertex AI response was invalid: \(message)"
+            return "Vertex AI response was invalid: \(message)"
         case .noData:
-            "No Vertex AI usage data found for the current project."
+            return "No Vertex AI usage data found for the current project."
         }
     }
 }

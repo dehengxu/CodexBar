@@ -1,7 +1,6 @@
 import Foundation
 
 #if os(macOS)
-import SweetCookieKit
 
 private let opencodeCookieImportOrder: BrowserCookieImportOrder =
     ProviderDefaults.metadata[.opencode]?.browserCookieOrder ?? Browser.defaultImportOrder
@@ -87,7 +86,7 @@ enum OpenCodeCookieImportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noCookies:
-            "No OpenCode session cookies found in browsers."
+            return "No OpenCode session cookies found in browsers."
         }
     }
 }

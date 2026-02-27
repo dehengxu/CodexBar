@@ -14,9 +14,9 @@ enum ZaiTokenStoreError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case let .keychainStatus(status):
-            "Keychain error: \(status)"
+            return "Keychain error: \(status)"
         case .invalidData:
-            "Keychain returned invalid data."
+            return "Keychain returned invalid data."
         }
     }
 }
@@ -28,8 +28,8 @@ struct KeychainZaiTokenStore: ZaiTokenStoring {
     private let account = "zai-api-token"
 
     // Cache to reduce keychain access frequency
-    private nonisolated(unsafe) static var cachedToken: String?
-    private nonisolated(unsafe) static var cacheTimestamp: Date?
+    private static var cachedToken: String?
+    private static var cacheTimestamp: Date?
     private static let cacheLock = NSLock()
     private static let cacheTTL: TimeInterval = 1800 // 30 minutes
 

@@ -1,8 +1,6 @@
 import CodexBarCore
-import CodexBarMacroSupport
 import Foundation
 
-@ProviderImplementationRegistration
 struct AntigravityProviderImplementation: ProviderImplementation {
     let id: UsageProvider = .antigravity
 

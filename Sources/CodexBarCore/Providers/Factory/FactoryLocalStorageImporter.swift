@@ -1,7 +1,6 @@
 import Foundation
 #if os(macOS)
 import SQLite3
-import SweetCookieKit
 #endif
 
 #if os(macOS)
@@ -31,11 +30,12 @@ enum FactoryLocalStorageImporter {
 
         let candidates = safariCandidates + chromeCandidates
         for candidate in candidates {
-            let match: WorkOSTokenMatch? = switch candidate.kind {
+            let match: WorkOSTokenMatch?
+            switch candidate.kind {
             case let .chromeLevelDB(levelDBURL):
-                self.readWorkOSToken(from: levelDBURL)
+                match = self.readWorkOSToken(from: levelDBURL)
             case let .safariSQLite(dbURL):
-                self.readWorkOSTokenFromSafariSQLite(dbURL: dbURL, logger: log)
+                match = self.readWorkOSTokenFromSafariSQLite(dbURL: dbURL, logger: log)
             }
             guard let token = match else { continue }
             log("Found WorkOS refresh token in \(candidate.label)")
@@ -170,11 +170,12 @@ enum FactoryLocalStorageImporter {
 
         var seen = Set<String>()
         return candidates.filter { candidate in
-            let key: String = switch candidate.kind {
+            let key: String
+            switch candidate.kind {
             case let .chromeLevelDB(url):
-                url.path
+                key = url.path
             case let .safariSQLite(url):
-                url.path
+                key = url.path
             }
             if seen.contains(key) { return false }
             seen.insert(key)

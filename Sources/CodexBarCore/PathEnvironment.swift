@@ -425,13 +425,14 @@ enum LoginShellPathCapturer {
               !raw.isEmpty else { return nil }
 
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        let extracted = if let start = trimmed.range(of: marker),
-                           let end = trimmed.range(of: marker, options: .backwards),
-                           start.upperBound <= end.lowerBound
+        let extracted: String
+        if let start = trimmed.range(of: marker),
+           let end = trimmed.range(of: marker, options: .backwards),
+           start.upperBound <= end.lowerBound
         {
-            String(trimmed[start.upperBound..<end.lowerBound])
+            extracted = String(trimmed[start.upperBound..<end.lowerBound])
         } else {
-            trimmed
+            extracted = trimmed
         }
 
         let value = extracted.trimmingCharacters(in: .whitespacesAndNewlines)

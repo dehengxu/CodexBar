@@ -97,7 +97,7 @@ public enum SubprocessRunner {
             let exitCode = try await withThrowingTaskGroup(of: Int32.self) { group in
                 group.addTask { await exitCodeTask.value }
                 group.addTask {
-                    try await Task.sleep(for: .seconds(timeout))
+                    try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
                     throw SubprocessRunnerError.timedOut(label)
                 }
                 let code = try await group.next()!

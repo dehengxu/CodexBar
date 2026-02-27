@@ -116,10 +116,11 @@ struct CodexLoginRunner {
         let stdoutText = await out
         let stderrText = await err
 
-        let merged: String = if !stdoutText.isEmpty, !stderrText.isEmpty {
-            [stdoutText, stderrText].joined(separator: "\n")
+        let merged: String
+        if !stdoutText.isEmpty, !stderrText.isEmpty {
+            merged = [stdoutText, stderrText].joined(separator: "\n")
         } else {
-            stdoutText + stderrText
+            merged = stdoutText + stderrText
         }
         let trimmed = merged.trimmingCharacters(in: .whitespacesAndNewlines)
         let limited = trimmed.prefix(4000)

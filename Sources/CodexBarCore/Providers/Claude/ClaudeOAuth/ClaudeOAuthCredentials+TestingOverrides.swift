@@ -2,8 +2,8 @@ import Foundation
 
 #if DEBUG
 extension ClaudeOAuthCredentialsStore {
-    nonisolated(unsafe) static var claudeKeychainDataOverride: Data?
-    nonisolated(unsafe) static var claudeKeychainFingerprintOverride: ClaudeKeychainFingerprint?
+    static var claudeKeychainDataOverride: Data?
+    static var claudeKeychainFingerprintOverride: ClaudeKeychainFingerprint?
     @TaskLocal static var taskClaudeKeychainDataOverride: Data?
     @TaskLocal static var taskClaudeKeychainFingerprintOverride: ClaudeKeychainFingerprint?
     @TaskLocal static var taskMemoryCacheStoreOverride: MemoryCacheStore?
@@ -113,7 +113,7 @@ extension ClaudeOAuthCredentialsStore {
     @TaskLocal static var taskCredentialsFileFingerprintStoreOverride: CredentialsFileFingerprintStore?
     @TaskLocal static var taskSecurityCLIReadOverride: SecurityCLIReadOverride?
     @TaskLocal static var taskSecurityCLIReadAccountOverride: String?
-    nonisolated(unsafe) static var securityCLIReadOverride: SecurityCLIReadOverride?
+    static var securityCLIReadOverride: SecurityCLIReadOverride?
 
     static func withKeychainAccessOverrideForTesting<T>(
         _ disabled: Bool?,

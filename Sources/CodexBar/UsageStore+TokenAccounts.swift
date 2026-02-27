@@ -47,9 +47,7 @@ extension UsageStore {
             }
         }
 
-        await MainActor.run {
-            self.accountSnapshots[provider] = snapshots
-        }
+        self.accountSnapshots[provider] = snapshots
 
         if let selectedOutcome {
             await self.applySelectedOutcome(
@@ -144,35 +142,30 @@ extension UsageStore {
         account: ProviderTokenAccount?,
         fallbackSnapshot: UsageSnapshot?) async
     {
-        await MainActor.run {
-            self.lastFetchAttempts[provider] = outcome.attempts
-        }
+        self.lastFetchAttempts[provider] = outcome.attempts
         switch outcome.result {
         case let .success(result):
             let scoped = result.usage.scoped(to: provider)
-            let labeled: UsageSnapshot = if let account {
-                self.applyAccountLabel(scoped, provider: provider, account: account)
+            let labeled: UsageSnapshot
+            if let account {
+                labeled = self.applyAccountLabel(scoped, provider: provider, account: account)
             } else {
-                scoped
+                labeled = scoped
             }
-            await MainActor.run {
-                self.handleSessionQuotaTransition(provider: provider, snapshot: labeled)
-                self.snapshots[provider] = labeled
-                self.lastSourceLabels[provider] = result.sourceLabel
-                self.errors[provider] = nil
-                self.failureGates[provider]?.recordSuccess()
-            }
+            self.handleSessionQuotaTransition(provider: provider, snapshot: labeled)
+            self.snapshots[provider] = labeled
+            self.lastSourceLabels[provider] = result.sourceLabel
+            self.errors[provider] = nil
+            self.failureGates[provider]?.recordSuccess()
         case let .failure(error):
-            await MainActor.run {
-                let hadPriorData = self.snapshots[provider] != nil || fallbackSnapshot != nil
-                let shouldSurface = self.failureGates[provider]?
-                    .shouldSurfaceError(onFailureWithPriorData: hadPriorData) ?? true
-                if shouldSurface {
-                    self.errors[provider] = error.localizedDescription
-                    self.snapshots.removeValue(forKey: provider)
-                } else {
-                    self.errors[provider] = nil
-                }
+            let hadPriorData = self.snapshots[provider] != nil || fallbackSnapshot != nil
+            let shouldSurface = self.failureGates[provider]?
+                .shouldSurfaceError(onFailureWithPriorData: hadPriorData) ?? true
+            if shouldSurface {
+                self.errors[provider] = error.localizedDescription
+                self.snapshots.removeValue(forKey: provider)
+            } else {
+                self.errors[provider] = nil
             }
         }
     }

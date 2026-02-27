@@ -1,9 +1,7 @@
 import CodexBarCore
-import CodexBarMacroSupport
 import Foundation
 import SwiftUI
 
-@ProviderImplementationRegistration
 struct CodexProviderImplementation: ProviderImplementation {
     let id: UsageProvider = .codex
     let supportsLoginFlow: Bool = true
@@ -47,12 +45,13 @@ struct CodexProviderImplementation: ProviderImplementation {
     @MainActor
     func sourceMode(context: ProviderSourceModeContext) -> ProviderSourceMode {
         switch context.settings.codexUsageDataSource {
-        case .auto: .auto
-        case .oauth: .oauth
-        case .cli: .cli
+        case .auto: return .auto
+        case .oauth: return .oauth
+        case .cli: return .cli
         }
     }
 
+    @MainActor
     func makeRuntime() -> (any ProviderRuntime)? {
         CodexProviderRuntime()
     }

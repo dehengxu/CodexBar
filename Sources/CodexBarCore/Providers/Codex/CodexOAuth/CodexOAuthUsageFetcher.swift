@@ -32,20 +32,20 @@ public struct CodexUsageResponse: Decodable, Sendable {
 
         public var rawValue: String {
             switch self {
-            case .guest: "guest"
-            case .free: "free"
-            case .go: "go"
-            case .plus: "plus"
-            case .pro: "pro"
-            case .freeWorkspace: "free_workspace"
-            case .team: "team"
-            case .business: "business"
-            case .education: "education"
-            case .quorum: "quorum"
-            case .k12: "k12"
-            case .enterprise: "enterprise"
-            case .edu: "edu"
-            case let .unknown(value): value
+            case .guest: return "guest"
+            case .free: return "free"
+            case .go: return "go"
+            case .plus: return "plus"
+            case .pro: return "pro"
+            case .freeWorkspace: return "free_workspace"
+            case .team: return "team"
+            case .business: return "business"
+            case .education: return "education"
+            case .quorum: return "quorum"
+            case .k12: return "k12"
+            case .enterprise: return "enterprise"
+            case .edu: return "edu"
+            case let .unknown(value): return value
             }
         }
 

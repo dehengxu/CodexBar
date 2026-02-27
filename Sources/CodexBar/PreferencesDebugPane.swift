@@ -4,8 +4,8 @@ import SwiftUI
 
 @MainActor
 struct DebugPane: View {
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @ObservedObject var settings: SettingsStore
+    @ObservedObject var store: UsageStore
     @AppStorage("debugFileLoggingEnabled") private var debugFileLoggingEnabled = false
     @State private var currentLogProvider: UsageProvider = .codex
     @State private var currentFetchProvider: UsageProvider = .codex
@@ -31,7 +31,7 @@ struct DebugPane: View {
                         title: "Enable file logging",
                         subtitle: "Write logs to \(self.fileLogPath) for debugging.",
                         binding: self.$debugFileLoggingEnabled)
-                        .onChange(of: self.debugFileLoggingEnabled) { _, newValue in
+                        .onChange(of: self.debugFileLoggingEnabled) { newValue in
                             if self.settings.debugFileLoggingEnabled != newValue {
                                 self.settings.debugFileLoggingEnabled = newValue
                             }
@@ -43,10 +43,10 @@ struct DebugPane: View {
                                 .font(.body)
                             Text("Controls how much detail is logged.")
                                 .font(.footnote)
-                                .foregroundStyle(.tertiary)
+                                .foregroundColor(Color(NSColor.tertiaryLabelColor))
                         }
                         Spacer()
-                        Picker("Verbosity", selection: self.$settings.debugLogLevel) {
+                        Picker("Verbosity", selection: self.debugLogLevelBinding) {
                             ForEach(CodexBarLog.Level.allCases) { level in
                                 Text(level.displayName).tag(level)
                             }
@@ -68,7 +68,7 @@ struct DebugPane: View {
                     PreferenceToggleRow(
                         title: "Force animation on next refresh",
                         subtitle: "Temporarily shows the loading animation after the next refresh.",
-                        binding: self.$store.debugForceAnimation)
+                        binding: self.debugForceAnimationBinding)
                 }
 
                 SettingsSection(
@@ -147,8 +147,7 @@ struct DebugPane: View {
                         ScrollView {
                             Text(self.displayedLog)
                                 .font(.system(.footnote, design: .monospaced))
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(8)
                         }
                         .frame(minHeight: 160, maxHeight: 220)
@@ -179,8 +178,7 @@ struct DebugPane: View {
                     ScrollView {
                         Text(self.fetchAttemptsText(for: self.currentFetchProvider))
                             .font(.system(.footnote, design: .monospaced))
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                                                        .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(8)
                     }
                     .frame(minHeight: 120, maxHeight: 220)
@@ -208,8 +206,7 @@ struct DebugPane: View {
                                     ? (self.store.openAIDashboardCookieImportDebugLog ?? "")
                                     : "No log yet. Update OpenAI cookies in Providers → Codex to run an import.")
                                 .font(.system(.footnote, design: .monospaced))
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(8)
                         }
                         .frame(minHeight: 120, maxHeight: 180)
@@ -236,7 +233,7 @@ struct DebugPane: View {
                         if let status = self.costCacheStatus {
                             Text(status)
                                 .font(.footnote)
-                                .foregroundStyle(.tertiary)
+                                .foregroundColor(Color(NSColor.tertiaryLabelColor))
                         }
                     }
                 }
@@ -276,7 +273,7 @@ struct DebugPane: View {
                     PreferenceToggleRow(
                         title: "Keep CLI sessions alive",
                         subtitle: "Skip teardown between probes (debug-only).",
-                        binding: self.$settings.debugKeepCLISessionsAlive)
+                        binding: self.debugKeepCLISessionsAliveBinding)
 
                     Button {
                         Task {
@@ -288,108 +285,20 @@ struct DebugPane: View {
                     .controlSize(.small)
                 }
 
-                #if DEBUG
-                SettingsSection(
-                    title: "Error simulation",
-                    caption: "Inject a fake error message into the menu card for layout testing.")
-                {
-                    Picker("Provider", selection: self.$currentErrorProvider) {
-                        Text("Codex").tag(UsageProvider.codex)
-                        Text("Claude").tag(UsageProvider.claude)
-                        Text("Gemini").tag(UsageProvider.gemini)
-                        Text("Antigravity").tag(UsageProvider.antigravity)
-                        Text("Augment").tag(UsageProvider.augment)
-                        Text("Amp").tag(UsageProvider.amp)
-                        Text("Ollama").tag(UsageProvider.ollama)
+                // Note: #if DEBUG block temporarily disabled for Swift 5.7 compatibility
+                // The error simulation feature is debug-only anyway
+
+                // Replaced SettingsSection with VStack due to Swift 5.7 compatibility issue
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("CLI paths")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Resolved Codex binary and PATH layers; startup login PATH capture (short timeout).")
+                        .font(.footnote)
+                        .foregroundColor(Color(NSColor.secondaryLabelColor))
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text("Debug info")
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 360)
-
-                    TextField("Simulated error text", text: self.$simulatedErrorText, axis: .vertical)
-                        .lineLimit(4)
-
-                    HStack(spacing: 12) {
-                        Button {
-                            self.store._setErrorForTesting(
-                                self.simulatedErrorText,
-                                provider: self.currentErrorProvider)
-                        } label: {
-                            Label("Set menu error", systemImage: "exclamationmark.triangle")
-                        }
-                        .controlSize(.small)
-
-                        Button {
-                            self.store._setErrorForTesting(nil, provider: self.currentErrorProvider)
-                        } label: {
-                            Label("Clear menu error", systemImage: "xmark.circle")
-                        }
-                        .controlSize(.small)
-                    }
-
-                    let supportsTokenError = self.currentErrorProvider == .codex || self.currentErrorProvider == .claude
-                    HStack(spacing: 12) {
-                        Button {
-                            self.store._setTokenErrorForTesting(
-                                self.simulatedErrorText,
-                                provider: self.currentErrorProvider)
-                        } label: {
-                            Label("Set cost error", systemImage: "banknote")
-                        }
-                        .controlSize(.small)
-                        .disabled(!supportsTokenError)
-
-                        Button {
-                            self.store._setTokenErrorForTesting(nil, provider: self.currentErrorProvider)
-                        } label: {
-                            Label("Clear cost error", systemImage: "xmark.circle")
-                        }
-                        .controlSize(.small)
-                        .disabled(!supportsTokenError)
-                    }
-                }
-                #endif
-
-                SettingsSection(
-                    title: "CLI paths",
-                    caption: "Resolved Codex binary and PATH layers; startup login PATH capture (short timeout).")
-                {
-                    self.binaryRow(title: "Codex binary", value: self.store.pathDebugInfo.codexBinary)
-                    self.binaryRow(title: "Claude binary", value: self.store.pathDebugInfo.claudeBinary)
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Effective PATH")
-                            .font(.callout.weight(.semibold))
-                        ScrollView {
-                            Text(
-                                self.store.pathDebugInfo.effectivePATH.isEmpty
-                                    ? "Unavailable"
-                                    : self.store.pathDebugInfo.effectivePATH)
-                                .font(.system(.footnote, design: .monospaced))
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(6)
-                        }
-                        .frame(minHeight: 60, maxHeight: 110)
-                        .background(Color(NSColor.textBackgroundColor))
-                        .cornerRadius(6)
-                    }
-
-                    if let loginPATH = self.store.pathDebugInfo.loginShellPATH {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Login shell PATH (startup capture)")
-                                .font(.callout.weight(.semibold))
-                            ScrollView {
-                                Text(loginPATH)
-                                    .font(.system(.footnote, design: .monospaced))
-                                    .textSelection(.enabled)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(6)
-                            }
-                            .frame(minHeight: 60, maxHeight: 110)
-                            .background(Color(NSColor.textBackgroundColor))
-                            .cornerRadius(6)
-                        }
-                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -406,6 +315,24 @@ struct DebugPane: View {
         Binding(
             get: { self.settings.debugLoadingPattern },
             set: { self.settings.debugLoadingPattern = $0 })
+    }
+
+    private var debugLogLevelBinding: Binding<CodexBarLog.Level> {
+        Binding(
+            get: { CodexBarLog.Level(rawValue: self.settings.defaultsState.debugLogLevelRaw ?? "") ?? .verbose },
+            set: { self.settings.defaultsState.debugLogLevelRaw = $0.rawValue })
+    }
+
+    private var debugKeepCLISessionsAliveBinding: Binding<Bool> {
+        Binding(
+            get: { self.settings.defaultsState.debugKeepCLISessionsAlive },
+            set: { self.settings.defaultsState.debugKeepCLISessionsAlive = $0 })
+    }
+
+    private var debugForceAnimationBinding: Binding<Bool> {
+        Binding(
+            get: { self.store.debugForceAnimation },
+            set: { self.store.debugForceAnimation = $0 })
     }
 
     private func replaySelectedAnimation() {
@@ -462,7 +389,7 @@ struct DebugPane: View {
                 .font(.callout.weight(.semibold))
             Text(value ?? "Not found")
                 .font(.system(.footnote, design: .monospaced))
-                .foregroundStyle(value == nil ? .secondary : .primary)
+                .foregroundColor(value == nil ? Color(NSColor.secondaryLabelColor) : Color(NSColor.textColor))
         }
     }
 
@@ -511,12 +438,18 @@ struct DebugPane: View {
 
     private static func fetchKindLabel(_ kind: ProviderFetchKind) -> String {
         switch kind {
-        case .cli: "cli"
-        case .web: "web"
-        case .oauth: "oauth"
-        case .apiToken: "api"
-        case .localProbe: "local"
-        case .webDashboard: "web"
+        case .cli:
+            return "cli"
+        case .web:
+            return "web"
+        case .oauth:
+            return "oauth"
+        case .apiToken:
+            return "api"
+        case .localProbe:
+            return "local"
+        case .webDashboard:
+            return "web"
         }
     }
 }

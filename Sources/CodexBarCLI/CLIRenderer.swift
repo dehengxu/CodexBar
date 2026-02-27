@@ -199,7 +199,8 @@ enum CLIRenderer {
     private static func colorizeUsage(_ text: String, remainingPercent: Double, useColor: Bool) -> String {
         guard useColor else { return text }
 
-        let code = switch remainingPercent {
+        let code
+    switch remainingPercent {
         case ..<10:
             "31" // red
         case ..<25:
@@ -217,7 +218,8 @@ enum CLIRenderer {
         -> String
     {
         guard useColor else { return text }
-        let code = switch indicator {
+        let code
+    switch indicator {
         case .none: "32" // green
         case .minor: "33" // yellow
         case .major, .critical: "31" // red

@@ -1,6 +1,5 @@
 #if os(macOS)
 import Foundation
-import SweetCookieKit
 import WebKit
 
 @MainActor
@@ -366,25 +365,25 @@ public struct OpenAIDashboardBrowserCookieImporter {
     {
         switch source {
         case .safari:
-            await self.trySafari(
+            return await self.trySafari(
                 targetEmail: targetEmail,
                 allowAnyAccount: allowAnyAccount,
                 log: log,
                 diagnostics: &diagnostics)
         case .chrome:
-            await self.tryChrome(
+            return await self.tryChrome(
                 targetEmail: targetEmail,
                 allowAnyAccount: allowAnyAccount,
                 log: log,
                 diagnostics: &diagnostics)
         case .firefox:
-            await self.tryFirefox(
+            return await self.tryFirefox(
                 targetEmail: targetEmail,
                 allowAnyAccount: allowAnyAccount,
                 log: log,
                 diagnostics: &diagnostics)
         default:
-            nil
+            return nil
         }
     }
 

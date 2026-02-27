@@ -43,7 +43,7 @@ public enum KeychainPromptHandler {
     }
 
     @TaskLocal private static var taskHandlerStore: HandlerStore?
-    public nonisolated(unsafe) static var handler: ((KeychainPromptContext) -> Void)?
+    public static var handler: ((KeychainPromptContext) -> Void)?
 
     public static func notify(_ context: KeychainPromptContext) {
         if let taskHandlerStore {
@@ -94,7 +94,7 @@ public enum KeychainAccessPreflight {
     }
 
     @TaskLocal private static var taskCheckGenericPasswordOverrideStore: CheckGenericPasswordOverrideStore?
-    private nonisolated(unsafe) static var checkGenericPasswordOverride: ((String, String?) -> Outcome)?
+    private static var checkGenericPasswordOverride: ((String, String?) -> Outcome)?
 
     static func setCheckGenericPasswordOverrideForTesting(_ override: ((String, String?) -> Outcome)?) {
         self.checkGenericPasswordOverride = override

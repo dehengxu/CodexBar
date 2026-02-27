@@ -11,20 +11,20 @@ public enum CodexUsageDataSource: String, CaseIterable, Identifiable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .auto: "Auto"
-        case .oauth: "OAuth API"
-        case .cli: "CLI (RPC/PTY)"
+        case .auto: return "Auto"
+        case .oauth: return "OAuth API"
+        case .cli: return "CLI (RPC/PTY)"
         }
     }
 
     public var sourceLabel: String {
         switch self {
         case .auto:
-            "auto"
+            return "auto"
         case .oauth:
-            "oauth"
+            return "oauth"
         case .cli:
-            "cli"
+            return "cli"
         }
     }
 }

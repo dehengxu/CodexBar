@@ -14,7 +14,7 @@ public enum CookieHeaderCache {
     }
 
     private static let log = CodexBarLog.logger(LogCategories.cookieCache)
-    private nonisolated(unsafe) static var legacyBaseURLOverride: URL?
+    private static var legacyBaseURLOverride: URL?
 
     public static func load(provider: UsageProvider) -> Entry? {
         let key = KeychainCacheStore.Key.cookie(provider: provider)

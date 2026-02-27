@@ -11,16 +11,16 @@ public enum ProviderCookieSource: String, CaseIterable, Identifiable, Sendable, 
 
     public var displayName: String {
         switch self {
-        case .auto: "Auto"
-        case .manual: "Manual"
-        case .off: "Off"
+        case .auto: return "Auto"
+        case .manual: return "Manual"
+        case .off: return "Off"
         }
     }
 
     public var isEnabled: Bool {
         switch self {
-        case .off: false
-        case .auto, .manual: true
+        case .off: return false
+        case .auto, .manual: return true
         }
     }
 }

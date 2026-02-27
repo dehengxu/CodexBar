@@ -108,28 +108,28 @@ public enum AntigravityStatusProbeError: LocalizedError, Sendable, Equatable {
     public var errorDescription: String? {
         switch self {
         case .notRunning:
-            "Antigravity language server not detected. Launch Antigravity and retry."
+            return "Antigravity language server not detected. Launch Antigravity and retry."
         case .missingCSRFToken:
-            "Antigravity CSRF token not found. Restart Antigravity and retry."
+            return "Antigravity CSRF token not found. Restart Antigravity and retry."
         case let .portDetectionFailed(message):
-            Self.portDetectionDescription(message)
+            return Self.portDetectionDescription(message)
         case let .apiError(message):
-            Self.apiErrorDescription(message)
+            return Self.apiErrorDescription(message)
         case let .parseFailed(message):
-            "Could not parse Antigravity quota: \(message)"
+            return "Could not parse Antigravity quota: \(message)"
         case .timedOut:
-            "Antigravity quota request timed out."
+            return "Antigravity quota request timed out."
         }
     }
 
     private static func portDetectionDescription(_ message: String) -> String {
         switch message {
         case "lsof not available":
-            "Antigravity port detection needs lsof. Install it, then retry."
+            return "Antigravity port detection needs lsof. Install it, then retry."
         case "no listening ports found":
-            "Antigravity is running but not exposing ports yet. Try again in a few seconds."
+            return "Antigravity is running but not exposing ports yet. Try again in a few seconds."
         default:
-            "Antigravity port detection failed: \(message)"
+            return "Antigravity port detection failed: \(message)"
         }
     }
 
@@ -650,8 +650,8 @@ private enum CodeValue: Decodable {
 
     var rawValue: String {
         switch self {
-        case let .int(value): "\(value)"
-        case let .string(value): value
+        case let .int(value): return "\(value)"
+        case let .string(value): return value
         }
     }
 

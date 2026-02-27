@@ -146,9 +146,9 @@ struct FileLogHandler: LogHandler {
     private static func renderMetadataValue(_ value: Logger.Metadata.Value) -> String {
         switch value {
         case let .string(text):
-            text
+            return text
         default:
-            String(describing: value)
+            return String(describing: value)
         }
     }
 }

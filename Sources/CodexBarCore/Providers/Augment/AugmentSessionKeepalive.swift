@@ -65,7 +65,8 @@ public final class AugmentSessionKeepalive {
 
         self.timerTask = Task.detached(priority: .utility) { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(self?.checkInterval ?? 300))
+                let interval = self?.checkInterval ?? 300
+                try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
                 await self?.checkAndRefreshIfNeeded()
             }
         }
@@ -203,7 +204,7 @@ public final class AugmentSessionKeepalive {
 
             if refreshed {
                 // Step 2: Re-import cookies from browser
-                try await Task.sleep(for: .seconds(1)) // Brief delay for browser to update cookies
+                try await Task.sleep(nanoseconds: 1 * 1_000_000_000) // Brief delay for browser to update cookies
                 let newSession = try AugmentCookieImporter.importSession(logger: self.logger)
 
                 self.log(
@@ -263,7 +264,7 @@ public final class AugmentSessionKeepalive {
             self.log("   ⏳ Waiting 5 seconds for browser to re-authenticate...")
 
             // Wait for browser to potentially re-authenticate
-            try? await Task.sleep(for: .seconds(5))
+            try? await Task.sleep(nanoseconds: 5 * 1_000_000_000)
 
             // Try to import cookies again
             do {
@@ -453,11 +454,11 @@ public enum AugmentSessionKeepaliveError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .invalidResponse:
-            "Invalid response from session endpoint"
+            return "Invalid response from session endpoint"
         case .sessionExpired:
-            "Session has expired"
+            return "Session has expired"
         case let .networkError(message):
-            "Network error: \(message)"
+            return "Network error: \(message)"
         }
     }
 }

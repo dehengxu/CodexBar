@@ -9,18 +9,18 @@ public enum ZaiAPIRegion: String, CaseIterable, Sendable {
     public var displayName: String {
         switch self {
         case .global:
-            "Global (api.z.ai)"
+            return "Global (api.z.ai)"
         case .bigmodelCN:
-            "BigModel CN (open.bigmodel.cn)"
+            return "BigModel CN (open.bigmodel.cn)"
         }
     }
 
     public var baseURLString: String {
         switch self {
         case .global:
-            "https://api.z.ai"
+            return "https://api.z.ai"
         case .bigmodelCN:
-            "https://open.bigmodel.cn"
+            return "https://open.bigmodel.cn"
         }
     }
 

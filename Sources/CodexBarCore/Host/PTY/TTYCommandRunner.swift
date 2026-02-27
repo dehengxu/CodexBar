@@ -67,9 +67,9 @@ public struct TTYCommandRunner {
         public var errorDescription: String? {
             switch self {
             case let .binaryNotFound(bin):
-                "Missing CLI '\(bin)'. Install it (e.g. npm i -g @openai/codex) or add it to PATH."
-            case let .launchFailed(msg): "Failed to launch process: \(msg)"
-            case .timedOut: "PTY command timed out."
+                return "Missing CLI '\(bin)'. Install it (e.g. npm i -g @openai/codex) or add it to PATH."
+            case let .launchFailed(msg): return "Failed to launch process: \(msg)"
+            case .timedOut: return "PTY command timed out."
             }
         }
     }

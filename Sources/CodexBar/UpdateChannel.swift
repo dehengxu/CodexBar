@@ -10,27 +10,27 @@ enum UpdateChannel: String, CaseIterable, Codable, Sendable {
     var displayName: String {
         switch self {
         case .stable:
-            "Stable"
+            return "Stable"
         case .beta:
-            "Beta"
+            return "Beta"
         }
     }
 
     var description: String {
         switch self {
         case .stable:
-            "Receive only stable, production-ready releases."
+            return "Receive only stable, production-ready releases."
         case .beta:
-            "Receive stable releases plus beta previews."
+            return "Receive stable releases plus beta previews."
         }
     }
 
     var allowedSparkleChannels: Set<String> {
         switch self {
         case .stable:
-            [""]
+            return [""]
         case .beta:
-            ["", UpdateChannel.sparkleBetaChannel]
+            return ["", UpdateChannel.sparkleBetaChannel]
         }
     }
 

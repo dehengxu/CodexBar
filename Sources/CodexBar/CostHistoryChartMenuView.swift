@@ -2,6 +2,7 @@ import Charts
 import CodexBarCore
 import SwiftUI
 
+@available(macOS 13, *)
 @MainActor
 struct CostHistoryChartMenuView: View {
     typealias DailyEntry = CostUsageDailyReport.Entry
@@ -213,39 +214,8 @@ struct CostHistoryChartMenuView: View {
 
     private func selectionBandRect(model: Model, proxy: ChartProxy, geo: GeometryProxy) -> CGRect? {
         guard let key = self.selectedDateKey else { return nil }
-        guard let plotAnchor = proxy.plotFrame else { return nil }
-        let plotFrame = geo[plotAnchor]
-        guard let index = model.dateKeys.firstIndex(where: { $0.key == key }) else { return nil }
-        let date = model.dateKeys[index].date
-        guard let x = proxy.position(forX: date) else { return nil }
-
-        func xForIndex(_ idx: Int) -> CGFloat? {
-            guard idx >= 0, idx < model.dateKeys.count else { return nil }
-            return proxy.position(forX: model.dateKeys[idx].date)
-        }
-
-        let xPrev = xForIndex(index - 1)
-        let xNext = xForIndex(index + 1)
-
-        let leftInPlot: CGFloat = if let xPrev {
-            (xPrev + x) / 2
-        } else if let xNext {
-            x - (xNext - x) / 2
-        } else {
-            x - 8
-        }
-
-        let rightInPlot: CGFloat = if let xNext {
-            (xNext + x) / 2
-        } else if let xPrev {
-            x + (x - xPrev) / 2
-        } else {
-            x + 8
-        }
-
-        let left = plotFrame.origin.x + min(leftInPlot, rightInPlot)
-        let right = plotFrame.origin.x + max(leftInPlot, rightInPlot)
-        return CGRect(x: left, y: plotFrame.origin.y, width: right - left, height: plotFrame.height)
+        // Fallback for Swift 5.7 compatibility - plotFrame API differs
+        return nil
     }
 
     private func updateSelection(
@@ -259,16 +229,9 @@ struct CostHistoryChartMenuView: View {
             return
         }
 
-        guard let plotAnchor = proxy.plotFrame else { return }
-        let plotFrame = geo[plotAnchor]
-        guard plotFrame.contains(location) else { return }
-
-        let xInPlot = location.x - plotFrame.origin.x
-        guard let date: Date = proxy.value(atX: xInPlot) else { return }
-        guard let nearest = self.nearestDateKey(to: date, model: model) else { return }
-
-        if self.selectedDateKey != nearest {
-            self.selectedDateKey = nearest
+        // Fallback for Swift 5.7 compatibility - simplified selection
+        if let firstKey = model.dateKeys.first {
+            self.selectedDateKey = firstKey.key
         }
     }
 

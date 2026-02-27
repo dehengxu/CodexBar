@@ -14,24 +14,24 @@ enum LoadingPattern: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .knightRider: "Knight Rider"
-        case .cylon: "Cylon"
-        case .outsideIn: "Outside-In"
-        case .race: "Race"
-        case .pulse: "Pulse"
-        case .unbraid: "Unbraid (logo → bars)"
+        case .knightRider: return "Knight Rider"
+        case .cylon: return "Cylon"
+        case .outsideIn: return "Outside-In"
+        case .race: return "Race"
+        case .pulse: return "Pulse"
+        case .unbraid: return "Unbraid (logo → bars)"
         }
     }
 
     /// Secondary offset so the lower bar moves differently.
     var secondaryOffset: Double {
         switch self {
-        case .knightRider: .pi
-        case .cylon: .pi / 2
-        case .outsideIn: .pi
-        case .race: .pi / 3
-        case .pulse: .pi / 2
-        case .unbraid: .pi / 2
+        case .knightRider: return Double.pi
+        case .cylon: return Double.pi / 2
+        case .outsideIn: return Double.pi
+        case .race: return Double.pi / 3
+        case .pulse: return Double.pi / 2
+        case .unbraid: return Double.pi / 2
         }
     }
 
@@ -41,12 +41,12 @@ enum LoadingPattern: String, CaseIterable, Identifiable {
         case .knightRider:
             v = 0.5 + 0.5 * sin(phase) // ping-pong
         case .cylon:
-            let t = phase.truncatingRemainder(dividingBy: .pi * 2) / (.pi * 2)
+            let t = phase.truncatingRemainder(dividingBy: Double.pi * 2) / (Double.pi * 2)
             v = t // sawtooth 0→1
         case .outsideIn:
             v = abs(cos(phase)) // high at edges, dip center
         case .race:
-            let t = (phase * 1.2).truncatingRemainder(dividingBy: .pi * 2) / (.pi * 2)
+            let t = (phase * 1.2).truncatingRemainder(dividingBy: Double.pi * 2) / (Double.pi * 2)
             v = t
         case .pulse:
             v = 0.4 + 0.6 * (0.5 + 0.5 * sin(phase)) // 40–100%

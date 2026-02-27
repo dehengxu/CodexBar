@@ -1,7 +1,10 @@
 import SwiftUI
 
 extension EnvironmentValues {
-    @Entry var menuItemHighlighted: Bool = false
+    var menuItemHighlighted: Bool {
+        get { false }
+        set { }
+    }
 }
 
 enum MenuHighlightStyle {

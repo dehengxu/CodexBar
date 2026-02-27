@@ -55,7 +55,7 @@ private enum OpenAIWebCodexError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingUsage:
-            "OpenAI web dashboard did not include usage limits."
+            return "OpenAI web dashboard did not include usage limits."
         }
     }
 }

@@ -15,12 +15,12 @@ public enum ClaudeOAuthDelegatedRefreshCoordinator {
     private static let shortCooldownInterval: TimeInterval = 20
 
     private static let stateLock = NSLock()
-    private nonisolated(unsafe) static var hasLoadedState = false
-    private nonisolated(unsafe) static var lastAttemptAt: Date?
-    private nonisolated(unsafe) static var lastCooldownInterval: TimeInterval?
-    private nonisolated(unsafe) static var inFlightAttemptID: UInt64?
-    private nonisolated(unsafe) static var inFlightTask: Task<Outcome, Never>?
-    private nonisolated(unsafe) static var nextAttemptID: UInt64 = 0
+    private static var hasLoadedState = false
+    private static var lastAttemptAt: Date?
+    private static var lastCooldownInterval: TimeInterval?
+    private static var inFlightAttemptID: UInt64?
+    private static var inFlightTask: Task<Outcome, Never>?
+    private static var nextAttemptID: UInt64 = 0
 
     public static func attempt(now: Date = Date(), timeout: TimeInterval = 8) async -> Outcome {
         if Task.isCancelled {
@@ -327,9 +327,9 @@ public enum ClaudeOAuthDelegatedRefreshCoordinator {
     }
 
     #if DEBUG
-    private nonisolated(unsafe) static var cliAvailableOverride: Bool?
-    private nonisolated(unsafe) static var touchAuthPathOverride: (@Sendable (TimeInterval) async throws -> Void)?
-    private nonisolated(unsafe) static var keychainFingerprintOverride: (() -> ClaudeOAuthCredentialsStore
+    private static var cliAvailableOverride: Bool?
+    private static var touchAuthPathOverride: (@Sendable (TimeInterval) async throws -> Void)?
+    private static var keychainFingerprintOverride: (() -> ClaudeOAuthCredentialsStore
         .ClaudeKeychainFingerprint?)?
 
     static func setCLIAvailableOverrideForTesting(_ override: Bool?) {

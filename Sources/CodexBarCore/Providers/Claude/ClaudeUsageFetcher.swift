@@ -48,11 +48,11 @@ public enum ClaudeUsageError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .claudeNotInstalled:
-            "Claude CLI is not installed. Install it from https://docs.claude.ai/claude-code."
+            return "Claude CLI is not installed. Install it from https://docs.claude.ai/claude-code."
         case let .parseFailed(details):
-            "Could not parse Claude usage: \(details)"
+            return "Could not parse Claude usage: \(details)"
         case let .oauthFailed(details):
-            details
+            return details
         }
     }
 }
@@ -80,11 +80,11 @@ public struct ClaudeUsageFetcher: ClaudeUsageFetching, Sendable {
         var canPromptNow: Bool {
             switch self.mode {
             case .never:
-                false
+                return false
             case .onlyOnUserAction:
-                self.interaction == .userInitiated
+                return self.interaction == .userInitiated
             case .always:
-                true
+                return true
             }
         }
 
@@ -584,13 +584,13 @@ public struct ClaudeUsageFetcher: ClaudeUsageFetching, Sendable {
     {
         switch outcome {
         case .skippedByCooldown:
-            "skippedByCooldown"
+            return "skippedByCooldown"
         case .cliUnavailable:
-            "cliUnavailable"
+            return "cliUnavailable"
         case .attemptedSucceeded:
-            "attemptedSucceeded"
+            return "attemptedSucceeded"
         case .attemptedFailed:
-            "attemptedFailed"
+            return "attemptedFailed"
         }
     }
 
@@ -760,16 +760,16 @@ public struct ClaudeUsageFetcher: ClaudeUsageFetching, Sendable {
     // MARK: - Web API path (uses browser cookies)
 
     private func loadViaWebAPI() async throws -> ClaudeUsageSnapshot {
-        let webData: ClaudeWebAPIFetcher.WebUsageData =
-            if let header = self.manualCookieHeader {
-                try await ClaudeWebAPIFetcher.fetchUsage(cookieHeader: header) { msg in
-                    Self.log.debug(msg)
-                }
-            } else {
-                try await ClaudeWebAPIFetcher.fetchUsage(browserDetection: self.browserDetection) { msg in
-                    Self.log.debug(msg)
-                }
+        let webData: ClaudeWebAPIFetcher.WebUsageData
+        if let header = self.manualCookieHeader {
+            webData = try await ClaudeWebAPIFetcher.fetchUsage(cookieHeader: header) { msg in
+                Self.log.debug(msg)
             }
+        } else {
+            webData = try await ClaudeWebAPIFetcher.fetchUsage(browserDetection: self.browserDetection) { msg in
+                Self.log.debug(msg)
+            }
+        }
         // Convert web API data to ClaudeUsageSnapshot format
         let primary = RateWindow(
             usedPercent: webData.sessionPercentUsed,
@@ -867,18 +867,18 @@ public struct ClaudeUsageFetcher: ClaudeUsageFetching, Sendable {
     {
         guard self.useWebExtras, self.dataSource != .web else { return snapshot }
         do {
-            let webData: ClaudeWebAPIFetcher.WebUsageData =
-                if let header = self.manualCookieHeader {
-                    try await ClaudeWebAPIFetcher.fetchUsage(cookieHeader: header) { msg in
-                        Self.log.debug(msg)
-                    }
-                } else {
-                    try await ClaudeWebAPIFetcher.fetchUsage(
-                        browserDetection: self.browserDetection)
-                    { msg in
-                        Self.log.debug(msg)
-                    }
+            let webData: ClaudeWebAPIFetcher.WebUsageData
+            if let header = self.manualCookieHeader {
+                webData = try await ClaudeWebAPIFetcher.fetchUsage(cookieHeader: header) { msg in
+                    Self.log.debug(msg)
                 }
+            } else {
+                webData = try await ClaudeWebAPIFetcher.fetchUsage(
+                    browserDetection: self.browserDetection)
+                { msg in
+                    Self.log.debug(msg)
+                }
+            }
             // Only merge cost extras; keep identity fields from the primary data source.
             if snapshot.providerCost == nil, let extra = webData.extraUsageCost {
                 let normalizedExtra = Self.rescaleClaudeExtraUsageCostIfNeeded(
@@ -953,12 +953,12 @@ extension ClaudeUsageFetcher {
             }
 
             let hasOAuthCredentials = oauthCreds?.scopes.contains("user:profile") ?? false
-            let hasWebSession =
-                if let header = self.manualCookieHeader {
-                    ClaudeWebAPIFetcher.hasSessionKey(cookieHeader: header)
-                } else {
-                    ClaudeWebAPIFetcher.hasSessionKey(browserDetection: self.browserDetection)
-                }
+            let hasWebSession: Bool
+            if let header = self.manualCookieHeader {
+                hasWebSession = ClaudeWebAPIFetcher.hasSessionKey(cookieHeader: header)
+            } else {
+                hasWebSession = ClaudeWebAPIFetcher.hasSessionKey(browserDetection: self.browserDetection)
+            }
             let hasCLI = TTYCommandRunner.which("claude") != nil
 
             var autoDecisionMetadata: [String: String] = [
@@ -1037,25 +1037,25 @@ extension ClaudeUsageFetcher {
             return String(describing: type(of: error))
         }
 
-        return switch oauthError {
+        switch oauthError {
         case .decodeFailed:
-            "decodeFailed"
+            return "decodeFailed"
         case .missingOAuth:
-            "missingOAuth"
+            return "missingOAuth"
         case .missingAccessToken:
-            "missingAccessToken"
+            return "missingAccessToken"
         case .notFound:
-            "notFound"
+            return "notFound"
         case let .keychainError(status):
-            "keychainError:\(status)"
+            return "keychainError:\(status)"
         case .readFailed:
-            "readFailed"
+            return "readFailed"
         case .refreshFailed:
-            "refreshFailed"
+            return "refreshFailed"
         case .noRefreshToken:
-            "noRefreshToken"
+            return "noRefreshToken"
         case .refreshDelegatedToClaudeCLI:
-            "refreshDelegatedToClaudeCLI"
+            return "refreshDelegatedToClaudeCLI"
         }
     }
 }

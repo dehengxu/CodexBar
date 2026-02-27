@@ -1,5 +1,4 @@
 import Foundation
-import SweetCookieKit
 
 #if os(macOS)
 
@@ -246,14 +245,15 @@ public struct CursorStatusSnapshot: Sendable {
     /// Convert to UsageSnapshot for the common provider interface
     public func toUsageSnapshot() -> UsageSnapshot {
         // Primary: For legacy request-based plans, use request usage; otherwise use plan percentage
-        let primaryUsedPercent: Double = if self.isLegacyRequestPlan,
-                                            let used = self.requestsUsed,
-                                            let limit = self.requestsLimit,
-                                            limit > 0
+        let primaryUsedPercent: Double
+        if self.isLegacyRequestPlan,
+           let used = self.requestsUsed,
+           let limit = self.requestsLimit,
+           limit > 0
         {
-            (Double(used) / Double(limit)) * 100
+            primaryUsedPercent = (Double(used) / Double(limit)) * 100
         } else {
-            self.planPercentUsed
+            primaryUsedPercent = self.planPercentUsed
         }
 
         let primary = RateWindow(
@@ -268,21 +268,23 @@ public struct CursorStatusSnapshot: Sendable {
         let resolvedOnDemandLimit = self.onDemandLimitUSD
 
         // Secondary: On-demand usage as percentage of individual limit
-        let secondary: RateWindow? = if let limit = resolvedOnDemandLimit,
-                                        limit > 0
+        let secondary: RateWindow?
+        if let limit = resolvedOnDemandLimit,
+           limit > 0
         {
-            RateWindow(
+            secondary = RateWindow(
                 usedPercent: (resolvedOnDemandUsed / limit) * 100,
                 windowMinutes: nil,
                 resetsAt: self.billingCycleEnd,
                 resetDescription: self.billingCycleEnd.map { Self.formatResetDate($0) })
         } else {
-            nil
+            secondary = nil
         }
 
         // Provider cost snapshot for on-demand usage
-        let providerCost: ProviderCostSnapshot? = if resolvedOnDemandUsed > 0 {
-            ProviderCostSnapshot(
+        let providerCost: ProviderCostSnapshot?
+        if resolvedOnDemandUsed > 0 {
+            providerCost = ProviderCostSnapshot(
                 used: resolvedOnDemandUsed,
                 limit: resolvedOnDemandLimit ?? 0,
                 currencyCode: "USD",
@@ -290,16 +292,17 @@ public struct CursorStatusSnapshot: Sendable {
                 resetsAt: self.billingCycleEnd,
                 updatedAt: Date())
         } else {
-            nil
+            providerCost = nil
         }
 
         // Legacy plan request usage (when maxRequestUsage is set)
-        let cursorRequests: CursorRequestUsage? = if let used = self.requestsUsed,
-                                                     let limit = self.requestsLimit
+        let cursorRequests: CursorRequestUsage?
+        if let used = self.requestsUsed,
+           let limit = self.requestsLimit
         {
-            CursorRequestUsage(used: used, limit: limit)
+            cursorRequests = CursorRequestUsage(used: used, limit: limit)
         } else {
-            nil
+            cursorRequests = nil
         }
 
         let identity = ProviderIdentitySnapshot(
@@ -327,15 +330,15 @@ public struct CursorStatusSnapshot: Sendable {
     private static func formatMembershipType(_ type: String) -> String {
         switch type.lowercased() {
         case "enterprise":
-            "Cursor Enterprise"
+            return "Cursor Enterprise"
         case "pro":
-            "Cursor Pro"
+            return "Cursor Pro"
         case "hobby":
-            "Cursor Hobby"
+            return "Cursor Hobby"
         case "team":
-            "Cursor Team"
+            return "Cursor Team"
         default:
-            "Cursor \(type.capitalized)"
+            return "Cursor \(type.capitalized)"
         }
     }
 }
@@ -351,13 +354,13 @@ public enum CursorStatusProbeError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .notLoggedIn:
-            "Not logged in to Cursor. Please log in via the CodexBar menu."
+            return "Not logged in to Cursor. Please log in via the CodexBar menu."
         case let .networkError(msg):
-            "Cursor API error: \(msg)"
+            return "Cursor API error: \(msg)"
         case let .parseFailed(msg):
-            "Could not parse Cursor usage: \(msg)"
+            return "Could not parse Cursor usage: \(msg)"
         case .noSessionCookie:
-            "No Cursor session found. Please log in to cursor.com in \(cursorCookieImportOrder.loginHint)."
+            return "No Cursor session found. Please log in to cursor.com in \(cursorCookieImportOrder.loginHint)."
         }
     }
 }
@@ -657,8 +660,11 @@ public struct CursorStatusProbe: Sendable {
         userId: String,
         cookieHeader: String) async throws -> (CursorUsageResponse, String)
     {
-        let url = self.baseURL.appendingPathComponent("/api/usage")
-            .appending(queryItems: [URLQueryItem(name: "user", value: userId)])
+        var components = URLComponents(url: self.baseURL.appendingPathComponent("/api/usage"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "user", value: userId)]
+        guard let url = components?.url else {
+            throw CursorStatusProbeError.networkError("Invalid URL")
+        }
         var request = URLRequest(url: url)
         request.timeoutInterval = self.timeout
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -695,12 +701,13 @@ public struct CursorStatusProbe: Sendable {
         let planLimitRaw = Double(summary.individualUsage?.plan?.limit ?? 0)
         let planUsed = planUsedRaw / 100.0
         let planLimit = planLimitRaw / 100.0
-        let planPercentUsed: Double = if planLimitRaw > 0 {
-            (planUsedRaw / planLimitRaw) * 100
+        let planPercentUsed: Double
+        if planLimitRaw > 0 {
+            planPercentUsed = (planUsedRaw / planLimitRaw) * 100
         } else if let totalPercentUsed = summary.individualUsage?.plan?.totalPercentUsed {
-            totalPercentUsed <= 1 ? totalPercentUsed * 100 : totalPercentUsed
+            planPercentUsed = totalPercentUsed <= 1 ? totalPercentUsed * 100 : totalPercentUsed
         } else {
-            0
+            planPercentUsed = 0
         }
 
         let onDemandUsed = Double(summary.individualUsage?.onDemand?.used ?? 0) / 100.0
@@ -739,7 +746,7 @@ public enum CursorStatusProbeError: LocalizedError, Sendable {
     case notSupported
 
     public var errorDescription: String? {
-        "Cursor is only supported on macOS."
+        return "Cursor is only supported on macOS."
     }
 }
 

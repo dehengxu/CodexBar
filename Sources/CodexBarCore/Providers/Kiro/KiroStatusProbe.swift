@@ -62,15 +62,15 @@ public enum KiroStatusProbeError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .cliNotFound:
-            "kiro-cli not found. Install it from https://kiro.dev"
+            return "kiro-cli not found. Install it from https://kiro.dev"
         case .notLoggedIn:
-            "Not logged in to Kiro. Run 'kiro-cli login' first."
+            return "Not logged in to Kiro. Run 'kiro-cli login' first."
         case let .cliFailed(message):
-            message
+            return message
         case let .parseError(msg):
-            "Failed to parse Kiro usage: \(msg)"
+            return "Failed to parse Kiro usage: \(msg)"
         case .timeout:
-            "Kiro CLI timed out."
+            return "Kiro CLI timed out."
         }
     }
 }
@@ -406,13 +406,17 @@ public struct KiroStatusProbe: Sendable {
         // Parse credits used/total from "(X.XX of Y covered in plan)"
         var creditsUsed: Double = 0
         var creditsTotal: Double = 50 // default free tier
-        let creditsPattern = #"\((\d+\.?\d*)\s+of\s+(\d+)\s+covered"#
+        let creditsPattern = "\\((\\d+\\.?\\d*)\\s+of\\s+(\\d+)\\s+covered"
         if let creditsMatch = stripped.range(of: creditsPattern, options: .regularExpression) {
             let creditsStr = String(stripped[creditsMatch])
-            let numbers = creditsStr.matches(of: /(\d+\.?\d*)/)
-            if numbers.count >= 2 {
-                creditsUsed = Double(String(numbers[0].output.1)) ?? 0
-                creditsTotal = Double(String(numbers[1].output.1)) ?? 50
+            let numberPattern = "(\\d+\\.?\\d*)"
+            if let regex = try? NSRegularExpression(pattern: numberPattern),
+               let match = regex.firstMatch(in: creditsStr, range: NSRange(creditsStr.startIndex..., in: creditsStr)),
+               let range1 = Range(match.range(at: 1), in: creditsStr),
+               let range2 = Range(match.range(at: 2), in: creditsStr)
+            {
+                creditsUsed = Double(creditsStr[range1]) ?? 0
+                creditsTotal = Double(creditsStr[range2]) ?? 50
                 matchedCredits = true
             }
         }
@@ -424,18 +428,26 @@ public struct KiroStatusProbe: Sendable {
         var bonusUsed: Double?
         var bonusTotal: Double?
         var bonusExpiryDays: Int?
-        if let bonusMatch = stripped.range(of: #"Bonus credits:\s*(\d+\.?\d*)/(\d+)"#, options: .regularExpression) {
+        if let bonusMatch = stripped.range(of: "Bonus credits:\\s*(\\d+\\.?\\d*)/(\\d+)", options: .regularExpression) {
             let bonusStr = String(stripped[bonusMatch])
-            let numbers = bonusStr.matches(of: /(\d+\.?\d*)/)
-            if numbers.count >= 2 {
-                bonusUsed = Double(String(numbers[0].output.1))
-                bonusTotal = Double(String(numbers[1].output.1))
+            let numberPattern = "(\\d+\\.?\\d*)"
+            if let regex = try? NSRegularExpression(pattern: numberPattern),
+               let match = regex.firstMatch(in: bonusStr, range: NSRange(bonusStr.startIndex..., in: bonusStr)),
+               let range1 = Range(match.range(at: 1), in: bonusStr),
+               let range2 = Range(match.range(at: 2), in: bonusStr)
+            {
+                bonusUsed = Double(bonusStr[range1])
+                bonusTotal = Double(bonusStr[range2])
             }
         }
-        if let expiryMatch = stripped.range(of: #"expires in (\d+) days?"#, options: .regularExpression) {
+        if let expiryMatch = stripped.range(of: "expires in (\\d+) days?", options: .regularExpression) {
             let expiryStr = String(stripped[expiryMatch])
-            if let numMatch = expiryStr.range(of: #"\d+"#, options: .regularExpression) {
-                bonusExpiryDays = Int(String(expiryStr[numMatch]))
+            let numPattern = "\\d+"
+            if let numRegex = try? NSRegularExpression(pattern: numPattern),
+               let numMatch = numRegex.firstMatch(in: expiryStr, range: NSRange(expiryStr.startIndex..., in: expiryStr)),
+               let numRange = Range(numMatch.range, in: expiryStr)
+            {
+                bonusExpiryDays = Int(expiryStr[numRange])
             }
         }
 

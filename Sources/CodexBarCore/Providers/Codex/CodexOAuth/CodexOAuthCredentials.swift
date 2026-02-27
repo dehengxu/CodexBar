@@ -36,11 +36,11 @@ public enum CodexOAuthCredentialsError: LocalizedError, Sendable {
     public var errorDescription: String? {
         switch self {
         case .notFound:
-            "Codex auth.json not found. Run `codex` to log in."
+            return "Codex auth.json not found. Run `codex` to log in."
         case let .decodeFailed(message):
-            "Failed to decode Codex credentials: \(message)"
+            return "Failed to decode Codex credentials: \(message)"
         case .missingTokens:
-            "Codex auth.json exists but contains no tokens."
+            return "Codex auth.json exists but contains no tokens."
         }
     }
 }

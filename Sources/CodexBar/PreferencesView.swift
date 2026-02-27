@@ -24,10 +24,10 @@ enum PreferencesTab: String, Hashable {
 
 @MainActor
 struct PreferencesView: View {
-    @Bindable var settings: SettingsStore
-    @Bindable var store: UsageStore
+    @ObservedObject var settings: SettingsStore
+    @ObservedObject var store: UsageStore
     let updater: UpdaterProviding
-    @Bindable var selection: PreferencesSelection
+    @ObservedObject var selection: PreferencesSelection
     @State private var contentWidth: CGFloat = PreferencesTab.general.preferredWidth
     @State private var contentHeight: CGFloat = PreferencesTab.general.preferredHeight
 
@@ -66,10 +66,10 @@ struct PreferencesView: View {
             self.updateLayout(for: self.selection.tab, animate: false)
             self.ensureValidTabSelection()
         }
-        .onChange(of: self.selection.tab) { _, newValue in
+        .onChange(of: self.selection.tab) { newValue in
             self.updateLayout(for: newValue, animate: true)
         }
-        .onChange(of: self.settings.debugMenuEnabled) { _, _ in
+        .onChange(of: self.settings.debugMenuEnabled) { _ in
             self.ensureValidTabSelection()
         }
     }
