@@ -7,6 +7,8 @@
 #   ./scripts/build.sh release      # Release 构建
 #   ./scripts/build.sh app         # 生成 .app 包 (Debug)
 #   ./scripts/build.sh app release # 生成 .app 包 (Release)
+#   ./scripts/build.sh dmg         # 生成 .dmg 包 (Debug)
+#   ./scripts/build.sh dmg release # 生成 .dmg 包 (Release)
 #
 # 环境变量:
 #   CODEXBAR_SIGNING_MODE: 签名模式 (adhoc, identity, none)
@@ -24,15 +26,15 @@ TARGET="${2:-}"
 
 # 验证构建类型
 case "${BUILD_TYPE}" in
-    debug|release|app) ;;
+    debug|release|app|dmg) ;;
     *) echo "错误: 无效的构建类型 '${BUILD_TYPE}'" >&2
-       echo "用法: $0 [debug|release|app] [release]" >&2
+       echo "用法: $0 [debug|release|app|dmg] [release]" >&2
        exit 1
        ;;
 esac
 
 # 构建配置
-if [[ "${BUILD_TYPE}" == "app" ]]; then
+if [[ "${BUILD_TYPE}" == "app" || "${BUILD_TYPE}" == "dmg" ]]; then
     if [[ "${TARGET}" == "release" ]]; then
         BUILD_CONFIG="release"
     else
@@ -130,6 +132,87 @@ build_app() {
     echo "产物路径: ${app_bundle}"
 }
 
+# 检查并安装 create-dmg 工具
+install_create_dmg() {
+    if command -v create-dmg &> /dev/null; then
+        echo ">> create-dmg 已安装"
+        return 0
+    fi
+
+    echo ">> 正在安装 create-dmg..."
+
+    # 检查 Homebrew 是否可用
+    if ! command -v brew &> /dev/null; then
+        echo "错误: Homebrew 未安装，请先安装 Homebrew: https://brew.sh" >&2
+        exit 1
+    fi
+
+    # 安装 create-dmg
+    brew install create-dmg
+
+    if command -v create-dmg &> /dev/null; then
+        echo ">> create-dmg 安装成功"
+    else
+        echo "错误: create-dmg 安装失败" >&2
+        exit 1
+    fi
+}
+
+# 生成 .dmg 包
+build_dmg() {
+    local conf="$1"
+    local config_upper=$(printf "%s" "$conf" | tr '[:lower:]' '[:upper:]')
+
+    echo "=============================================="
+    echo "  构建 .dmg 包"
+    echo "  配置: ${config_upper}"
+    echo "=============================================="
+
+    cd "${ROOT_DIR}"
+
+    # 1. 先构建 .app
+    build_app "${conf}"
+
+    # 2. 检查并安装 create-dmg
+    install_create_dmg
+
+    # 3. 创建 DMG
+    local app_bundle="${ROOT_DIR}/CodexBar.app"
+    local dmg_path="${ROOT_DIR}/CodexBar-${config_upper}.dmg"
+
+    # 如果已存在 DMG，先删除
+    if [[ -f "${dmg_path}" ]]; then
+        rm -f "${dmg_path}"
+    fi
+
+    echo ">> 创建 DMG 文件..."
+
+    # 创建一个临时目录来包含 .app
+    local temp_dir="${ROOT_DIR}/.dmg_temp"
+    rm -rf "${temp_dir}"
+    mkdir -p "${temp_dir}"
+    cp -R "${app_bundle}" "${temp_dir}/"
+
+    # 使用 create-dmg 创建 DMG (新版本语法)
+    create-dmg \
+        --volname "CodexBar" \
+        --window-pos 200 120 \
+        --window-size 600 400 \
+        --app-drop-link 480 185 \
+        --icon-size 100 \
+        --hide-extension "CodexBar.app" \
+        "${dmg_path}" \
+        "${temp_dir}"
+
+    # 清理临时目录
+    rm -rf "${temp_dir}"
+
+    echo "=============================================="
+    echo "  .dmg 包构建成功!"
+    echo "=============================================="
+    echo "产物路径: ${dmg_path}"
+}
+
 # 构建项目
 build() {
     echo "=============================================="
@@ -162,6 +245,8 @@ build() {
 # 主逻辑
 if [[ "${BUILD_TYPE}" == "app" ]]; then
     build_app "${BUILD_CONFIG}"
+elif [[ "${BUILD_TYPE}" == "dmg" ]]; then
+    build_dmg "${BUILD_CONFIG}"
 else
     build
 fi
