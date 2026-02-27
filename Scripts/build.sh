@@ -97,6 +97,25 @@ build_app() {
         iconutil --convert icns --output "${app_bundle}/Contents/Resources/AppIcon.icns" "${ROOT_DIR}/Icon.iconset" 2>/dev/null || true
     fi
 
+    # 8. 嵌入 Sparkle.framework
+    echo ">> 嵌入 Sparkle.framework..."
+    if [[ -d "${ROOT_DIR}/.build/${conf}/Sparkle.framework" ]]; then
+        cp -R "${ROOT_DIR}/.build/${conf}/Sparkle.framework" "${app_bundle}/Contents/Frameworks/"
+        chmod -R a+rX "${app_bundle}/Contents/Frameworks/Sparkle.framework"
+        # 添加 rpath 以便找到框架
+        install_name_tool -add_rpath "@executable_path/../Frameworks" "${app_bundle}/Contents/MacOS/CodexBar" 2>/dev/null || true
+        echo "   - Sparkle.framework 已嵌入"
+    else
+        echo "   - 警告: 未找到 Sparkle.framework"
+    fi
+
+    # 9. 嵌入其他依赖框架 (KeyboardShortcuts)
+    if [[ -d "${ROOT_DIR}/.build/${conf}/KeyboardShortcuts.framework" ]]; then
+        cp -R "${ROOT_DIR}/.build/${conf}/KeyboardShortcuts.framework" "${app_bundle}/Contents/Frameworks/"
+        chmod -R a+rX "${app_bundle}/Contents/Frameworks/KeyboardShortcuts.framework"
+        echo "   - KeyboardShortcuts.framework 已嵌入"
+    fi
+
     echo "=============================================="
     echo "  .app 包构建成功!"
     echo "=============================================="
