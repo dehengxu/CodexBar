@@ -5,14 +5,6 @@ struct HiddenWindowView: View {
     var body: some View {
         Color.clear
             .frame(width: 20, height: 20)
-            .onReceive(NotificationCenter.default.publisher(for: .codexbarOpenSettings)) { _ in
-                Task { @MainActor in
-                    // Open System Settings directly instead of using openSettings
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.general") {
-                        NSWorkspace.shared.open(url)
-                    }
-                }
-            }
             .task {
                 // Migrate keychain items to reduce permission prompts during development (runs off main thread)
                 await Task.detached(priority: .userInitiated) {
