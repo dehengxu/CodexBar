@@ -1,4 +1,3 @@
-
 # Swift 6 to Swift 5.7 Backport Strategy (macOS 12 Target)
 
 ## 0. Role & Principles
@@ -179,13 +178,9 @@ List(items) { item in
 <!-- gitnexus:start -->
 # GitNexus MCP
 
-This project is indexed by GitNexus as **CodexBar** (613 symbols, 599 relationships, 0 execution flows).
+This project is indexed by GitNexus as **CodexBar** (1526 symbols, 1528 relationships, 2 execution flows).
 
 GitNexus provides a knowledge graph over this codebase — call chains, blast radius, execution flows, and semantic search.
-
-## Swift compatible version 5.7
-
-1. **Must keep compile with Swift 5.7**
 
 ## Always Start Here
 

@@ -77,9 +77,17 @@ build_app() {
     local exec_path="${ROOT_DIR}/.build/${conf}/CodexBar"
     cp "$exec_path" "${app_bundle}/Contents/MacOS/CodexBar"
 
-    # 4. 复制 Info.plist
+    # 4. 复制并修复 Info.plist
     if [[ -f "${ROOT_DIR}/Sources/CodexBar/Info.plist" ]]; then
+        # 复制 Info.plist
         cp "${ROOT_DIR}/Sources/CodexBar/Info.plist" "${app_bundle}/Contents/Info.plist"
+
+        # 替换变量占位符
+        sed -i '' 's|\$(EXECUTABLE_NAME)|CodexBar|g' "${app_bundle}/Contents/Info.plist"
+        sed -i '' 's|\$(PRODUCT_BUNDLE_IDENTIFIER)|com.codexbar.app|g' "${app_bundle}/Contents/Info.plist"
+        sed -i '' 's|\$(PRODUCT_NAME)|CodexBar|g' "${app_bundle}/Contents/Info.plist"
+        sed -i '' 's|\$(DEVELOPMENT_LANGUAGE)|en|g' "${app_bundle}/Contents/Info.plist"
+        sed -i '' 's|\$(MACOSX_DEPLOYMENT_TARGET)|12.0|g' "${app_bundle}/Contents/Info.plist"
     fi
 
     # 5. 复制 entitlements

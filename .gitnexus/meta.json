@@ -1,12 +1,12 @@
 {
   "repoPath": "/Users/dehengxu/Projects/3rd/vibecoding/CodexBar",
-  "lastCommit": "2ece8b5f3f4b26bd6b38eddf6ccd23afdf0d0c2d",
-  "indexedAt": "2026-02-24T23:29:24.017Z",
+  "lastCommit": "f857cc61cd9cd5d9e2eed77df44bb9ee19f5660d",
+  "indexedAt": "2026-02-27T05:11:18.678Z",
   "stats": {
-    "files": 538,
-    "nodes": 613,
-    "edges": 599,
-    "communities": 0,
-    "processes": 0
+    "files": 1074,
+    "nodes": 1526,
+    "edges": 1528,
+    "communities": 6,
+    "processes": 2
   }
 }
