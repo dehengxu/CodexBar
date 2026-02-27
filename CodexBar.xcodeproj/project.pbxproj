@@ -1611,6 +1611,7 @@
 				724692882C2B65BEA389BB28 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
+			productRefGroup = 617291D2F16F6A6323C073AB /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -1993,8 +1994,12 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Sources/CodexBar/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.codexbar.app;
+				PRODUCT_NAME = CodexBar;
 			};
 			name = Release;
 		};
@@ -2016,8 +2021,12 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Sources/CodexBar/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.codexbar.app;
+				PRODUCT_NAME = CodexBar;
 			};
 			name = Debug;
 		};

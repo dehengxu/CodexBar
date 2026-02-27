@@ -7,8 +7,8 @@ import Foundation
 
 private enum TTYCommandRunnerActiveProcessRegistry {
     private static let lock = NSLock()
-    private nonisolated(unsafe) static var processes: [pid_t: ProcessInfo] = [:]
-    private nonisolated(unsafe) static var isShuttingDown = false
+    private static var processes: [pid_t: ProcessInfo] = [:]
+    private static var isShuttingDown = false
 
     private struct ProcessInfo {
         let binary: String
