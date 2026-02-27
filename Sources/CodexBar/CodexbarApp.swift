@@ -278,15 +278,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Hide the SwiftUI lifecycle keepalive window.
     private func hideLifecycleWindow() {
-        // Find and hide the keepalive window by checking window order (usually the first window created)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            // The lifecycle keepalive window is typically the first regular window
-            for window in NSApp.windows {
-                // Skip standard app windows
-                if window.styleMask.contains(.titled) { continue }
-                if window.styleMask.contains(.closable) { continue }
-
-                // This is likely the keepalive window - hide it
+            // Find the keepalive window by its title
+            if let window = NSApp.windows.first(where: { $0.title == "CodexBarLifecycleKeepalive" }) {
                 window.orderOut(nil)
                 window.collectionBehavior = [.canJoinAllSpaces, .transient, .ignoresCycle]
                 window.level = .floating
@@ -295,7 +289,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 window.backgroundColor = .clear
                 window.hasShadow = false
                 window.ignoresMouseEvents = true
-                break
             }
         }
     }

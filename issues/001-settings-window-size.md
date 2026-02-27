@@ -34,20 +34,12 @@
 
 ### 修复 3: 在 AppDelegate 中隐藏窗口
 修改 `Sources/CodexBar/CodexbarApp.swift`，在 `applicationDidFinishLaunching` 中添加 `hideLifecycleWindow` 方法：
-```swift
-func applicationDidFinishLaunching(_ notification: Notification) {
-    // ... existing code ...
-    self.hideLifecycleWindow()
-}
 
+```swift
 private func hideLifecycleWindow() {
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-        for window in NSApp.windows {
-            // 跳过标准窗口
-            if window.styleMask.contains(.titled) { continue }
-            if window.styleMask.contains(.closable) { continue }
-
-            // 隐藏 Keepalive 窗口
+        // 通过窗口标题精确识别 Keepalive 窗口
+        if let window = NSApp.windows.first(where: { $0.title == "CodexBarLifecycleKeepalive" }) {
             window.orderOut(nil)
             window.collectionBehavior = [.canJoinAllSpaces, .transient, .ignoresCycle]
             window.level = .floating
@@ -56,11 +48,12 @@ private func hideLifecycleWindow() {
             window.backgroundColor = .clear
             window.hasShadow = false
             window.ignoresMouseEvents = true
-            break
         }
     }
 }
 ```
+
+**注意**: 初始版本通过 styleMask 判断窗口，可能误隐藏 StatusItem 窗口。后改为通过窗口标题 `"CodexBarLifecycleKeepalive"` 精确识别。
 
 ## 修改的文件
 
