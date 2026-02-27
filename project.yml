@@ -1,0 +1,45 @@
+name: CodexBar
+options:
+  bundleIdPrefix: com.codexbar
+  deploymentTarget:
+    macOS: "12.0"
+  xcodeVersion: "15.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.7"
+    MACOSX_DEPLOYMENT_TARGET: "12.0"
+
+targets:
+  CodexBar:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/CodexBar
+      - path: Sources/CodexBarCore
+      - path: Sources/CodexBarMacroSupport
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.codexbar.app
+        INFOPLIST_FILE: Sources/CodexBar/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Sources/CodexBar/CodexBar.entitlements
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+        COMBINE_HIDPI_IMAGES: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_IDENTITY: "-"
+    dependencies:
+      - package: Sparkle
+      - package: Logging
+      - package: KeyboardShortcuts
+
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.6.0"
+  Logging:
+    url: https://github.com/apple/swift-log
+    from: "1.5.0"
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: "1.0.0"
