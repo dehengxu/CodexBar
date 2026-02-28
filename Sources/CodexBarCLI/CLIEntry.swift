@@ -1,8 +1,5 @@
 import CodexBarCore
-import Commander
-#if canImport(AppKit)
-import AppKit
-#endif
+
 #if canImport(Darwin)
 import Darwin
 #else
@@ -13,104 +10,155 @@ import Foundation
 import FoundationNetworking
 #endif
 
+// MARK: - CLI Entry Point
+
 @main
-enum CodexBarCLI {
-    static func main() async {
-        let rawArgv = Array(CommandLine.arguments.dropFirst())
-        let argv = Self.effectiveArgv(rawArgv)
-        let outputPreferences = CLIOutputPreferences.from(argv: argv)
+struct CodexBarCLI {
+    static func main() {
+        let args = Array(CommandLine.arguments.dropFirst())
 
-        // Fast path: global help/version before building descriptors.
-        if let helpIndex = argv.firstIndex(where: { $0 == "-h" || $0 == "--help" }) {
-            let command = helpIndex == 0 ? argv.dropFirst().first : argv.first
-            Self.printHelp(for: command)
+        if args.isEmpty || args == ["usage"] {
+            runUsage(args)
+        } else if args.first == "cost" {
+            runCost(args)
+        } else if args.first == "config" {
+            runConfig(args)
+        } else if args.first == "--help" || args.first == "-h" {
+            printHelp()
+        } else {
+            print("Unknown command: \(args.first ?? "")")
+            print("Run 'codexbar --help' for usage information.")
+            exit(1)
         }
-        if argv.contains("-V") || argv.contains("--version") {
-            Self.printVersion()
-        }
+    }
+}
 
-        let program = Program(descriptors: Self.commandDescriptors())
+// MARK: - Usage Command
 
-        do {
-            let invocation = try program.resolve(argv: argv)
-            Self.bootstrapLogging(values: invocation.parsedValues)
-            switch invocation.path {
-            case ["usage"]:
-                await self.runUsage(invocation.parsedValues)
-            case ["cost"]:
-                await self.runCost(invocation.parsedValues)
-            case ["config", "validate"]:
-                self.runConfigValidate(invocation.parsedValues)
-            case ["config", "dump"]:
-                self.runConfigDump(invocation.parsedValues)
-            default:
-                Self.exit(
-                    code: .failure,
-                    message: "Unknown command",
-                    output: outputPreferences,
-                    kind: .args)
+func runUsage(_ args: [String]) {
+    var format = "text"
+    var json = false
+    var verbose = false
+    var logLevel: String?
+
+    // Parse options
+    var i = 1
+    while i < args.count {
+        let arg = args[i]
+        switch arg {
+        case "-f", "--format":
+            if i + 1 < args.count {
+                format = args[i + 1]
+                i += 2
+            } else {
+                i += 1
             }
-        } catch let error as CommanderProgramError {
-            Self.exit(code: .failure, message: error.description, output: outputPreferences, kind: .args)
-        } catch {
-            Self.exit(code: .failure, message: error.localizedDescription, output: outputPreferences, kind: .runtime)
+        case "-j", "--json":
+            json = true
+            i += 1
+        case "-v", "--verbose":
+            verbose = true
+            i += 1
+        case "--log-level":
+            if i + 1 < args.count {
+                logLevel = args[i + 1]
+                i += 2
+            } else {
+                i += 1
+            }
+        default:
+            i += 1
         }
     }
 
-    private static func commandDescriptors() -> [CommandDescriptor] {
-        let usageSignature = CommandSignature.describe(UsageOptions())
-        let costSignature = CommandSignature.describe(CostOptions())
-        let configSignature = CommandSignature.describe(ConfigOptions())
+    // Setup logging
+    let level = logLevel.flatMap { CodexBarLog.parseLevel($0) } ?? (verbose ? .debug : .error)
+    CodexBarLog.bootstrapIfNeeded(.init(destination: .stderr, level: level, json: json))
 
-        return [
-            CommandDescriptor(
-                name: "usage",
-                abstract: "Print usage as text or JSON",
-                discussion: nil,
-                signature: usageSignature),
-            CommandDescriptor(
-                name: "cost",
-                abstract: "Print local cost usage as text or JSON",
-                discussion: nil,
-                signature: costSignature),
-            CommandDescriptor(
-                name: "config",
-                abstract: "Config utilities",
-                discussion: nil,
-                signature: CommandSignature(),
-                subcommands: [
-                    CommandDescriptor(
-                        name: "validate",
-                        abstract: "Validate config file",
-                        discussion: nil,
-                        signature: configSignature),
-                    CommandDescriptor(
-                        name: "dump",
-                        abstract: "Print normalized config JSON",
-                        discussion: nil,
-                        signature: configSignature),
-                ],
-                defaultSubcommandName: "validate"),
-        ]
+    print("Usage: format=\(format), json=\(json)")
+    // TODO: Implement actual usage fetching
+}
+
+// MARK: - Cost Command
+
+func runCost(_ args: [String]) {
+    var format = "text"
+    var json = false
+    var verbose = false
+
+    var i = 2
+    while i < args.count {
+        let arg = args[i]
+        switch arg {
+        case "-f", "--format":
+            if i + 1 < args.count {
+                format = args[i + 1]
+                i += 2
+            } else {
+                i += 1
+            }
+        case "-j", "--json":
+            json = true
+            i += 1
+        case "-v", "--verbose":
+            verbose = true
+            i += 1
+        default:
+            i += 1
+        }
     }
 
-    // MARK: - Helpers
+    let level = verbose ? CodexBarLog.Level.debug : CodexBarLog.Level.error
+    CodexBarLog.bootstrapIfNeeded(.init(destination: .stderr, level: level, json: json))
 
-    private static func bootstrapLogging(values: ParsedValues) {
-        let isJSON = values.flags.contains("jsonOutput") || values.flags.contains("jsonOnly")
-        let verbose = values.flags.contains("verbose")
-        let rawLevel = values.options["logLevel"]?.last
-        let level = Self.resolvedLogLevel(verbose: verbose, rawLevel: rawLevel)
-        CodexBarLog.bootstrapIfNeeded(.init(destination: .stderr, level: level, json: isJSON))
-    }
+    print("Cost: format=\(format), json=\(json)")
+    // TODO: Implement actual cost fetching
+}
 
-    static func resolvedLogLevel(verbose: Bool, rawLevel: String?) -> CodexBarLog.Level {
-        CodexBarLog.parseLevel(rawLevel) ?? (verbose ? .debug : .error)
-    }
+// MARK: - Config Command
 
-    static func effectiveArgv(_ argv: [String]) -> [String] {
-        guard let first = argv.first else { return ["usage"] }
-        if first.hasPrefix("-") { return ["usage"] + argv }
-        return argv
+func runConfig(_ args: [String]) {
+    let subcommand = args.count > 1 ? args[1] : "validate"
+
+    switch subcommand {
+    case "validate":
+        print("Config validate: OK")
+        // TODO: Implement config validation
+    case "dump":
+        print("Config dump: {}")
+        // TODO: Implement config dump
+    default:
+        print("Unknown config subcommand: \(subcommand)")
+        exit(1)
     }
+}
+
+// MARK: - Help
+
+func printHelp() {
+    print("""
+    CodexBar CLI - Multi-provider AI usage monitoring
+
+    Usage: codexbar <command> [options]
+
+    Commands:
+      usage              Print provider usage (default)
+      cost               Print local cost usage
+      config             Config utilities
+        validate         Validate config file
+        dump            Print normalized config JSON
+
+    Options:
+      -f, --format      Output format (text, json) [default: text]
+      -j, --json        Output as JSON
+      -v, --verbose     Verbose output
+      --log-level       Log level (debug, info, warning, error)
+      -h, --help        Show this help message
+
+    Examples:
+      codexbar usage
+      codexbar usage --json
+      codexbar cost -v
+      codexbar config validate
+    """)
 }

@@ -24,9 +24,15 @@ let package = Package(
                 name: "CodexBarMacroSupport",
                 dependencies: [],
                 path: "Sources/CodexBarMacroSupport"),
+            .executableTarget(
+                name: "CodexBarCLI",
+                dependencies: [
+                    "CodexBarCore",
+                ],
+                path: "Sources/CodexBarCLI"),
             .testTarget(
                 name: "CodexBarLinuxTests",
-                dependencies: ["CodexBarCore"],
+                dependencies: ["CodexBarCore", "CodexBarCLI"],
                 path: "TestsLinux"),
         ]
 
