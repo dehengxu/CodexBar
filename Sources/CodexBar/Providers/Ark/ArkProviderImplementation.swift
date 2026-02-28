@@ -14,12 +14,13 @@ struct ArkProviderImplementation: ProviderImplementation {
     @MainActor
     func observeSettings(_ settings: SettingsStore) {
         _ = settings.arkAPIToken
+        _ = settings.arkCookieSource
+        _ = settings.arkCookieHeader
     }
 
     @MainActor
     func settingsSnapshot(context: ProviderSettingsSnapshotContext) -> ProviderSettingsSnapshotContribution? {
-        _ = context
-        return nil
+        .ark(context.settings.arkSettingsSnapshot(tokenOverride: context.tokenOverride))
     }
 
     @MainActor
@@ -33,12 +34,61 @@ struct ArkProviderImplementation: ProviderImplementation {
 
     @MainActor
     func settingsPickers(context: ProviderSettingsContext) -> [ProviderSettingsPickerDescriptor] {
-        return []
+        let cookieBinding = Binding(
+            get: { context.settings.arkCookieSource.rawValue },
+            set: { raw in
+                context.settings.arkCookieSource = ProviderCookieSource(rawValue: raw) ?? .auto
+            })
+        let cookieOptions = ProviderCookieSourceUI.options(
+            allowsOff: true,
+            keychainDisabled: context.settings.debugDisableKeychainAccess)
+
+        let cookieSubtitle: () -> String? = {
+            ProviderCookieSourceUI.subtitle(
+                source: context.settings.arkCookieSource,
+                keychainDisabled: context.settings.debugDisableKeychainAccess,
+                auto: "Automatic imports browser cookies.",
+                manual: "Paste a Cookie header or cURL capture from ARK settings.",
+                off: "ARK cookies are disabled.")
+        }
+
+        return [
+            ProviderSettingsPickerDescriptor(
+                id: "ark-cookie-source",
+                title: "Cookie source",
+                subtitle: "Automatic imports browser cookies.",
+                dynamicSubtitle: cookieSubtitle,
+                binding: cookieBinding,
+                options: cookieOptions,
+                isVisible: nil,
+                onChange: nil),
+        ]
     }
 
     @MainActor
     func settingsFields(context: ProviderSettingsContext) -> [ProviderSettingsFieldDescriptor] {
-        _ = context
-        return []
+        [
+            ProviderSettingsFieldDescriptor(
+                id: "ark-cookie",
+                title: "",
+                subtitle: "",
+                kind: .secure,
+                placeholder: "Cookie: …",
+                binding: context.stringBinding(\.arkCookieHeader),
+                actions: [
+                    ProviderSettingsActionDescriptor(
+                        id: "ark-open-settings",
+                        title: "Open ARK Settings",
+                        style: .link,
+                        isVisible: nil,
+                        perform: {
+                            if let url = URL(string: "https://console.volcengine.com/ark") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }),
+                ],
+                isVisible: { context.settings.arkCookieSource == .manual },
+                onActivate: { context.settings.ensureArkCookieLoaded() }),
+        ]
     }
 }

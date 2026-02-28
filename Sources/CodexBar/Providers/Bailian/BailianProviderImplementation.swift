@@ -14,12 +14,13 @@ struct BailianProviderImplementation: ProviderImplementation {
     @MainActor
     func observeSettings(_ settings: SettingsStore) {
         _ = settings.bailianAPIToken
+        _ = settings.bailianCookieSource
+        _ = settings.bailianCookieHeader
     }
 
     @MainActor
     func settingsSnapshot(context: ProviderSettingsSnapshotContext) -> ProviderSettingsSnapshotContribution? {
-        _ = context
-        return nil
+        .bailian(context.settings.bailianSettingsSnapshot(tokenOverride: context.tokenOverride))
     }
 
     @MainActor
@@ -33,12 +34,61 @@ struct BailianProviderImplementation: ProviderImplementation {
 
     @MainActor
     func settingsPickers(context: ProviderSettingsContext) -> [ProviderSettingsPickerDescriptor] {
-        return []
+        let cookieBinding = Binding(
+            get: { context.settings.bailianCookieSource.rawValue },
+            set: { raw in
+                context.settings.bailianCookieSource = ProviderCookieSource(rawValue: raw) ?? .auto
+            })
+        let cookieOptions = ProviderCookieSourceUI.options(
+            allowsOff: true,
+            keychainDisabled: context.settings.debugDisableKeychainAccess)
+
+        let cookieSubtitle: () -> String? = {
+            ProviderCookieSourceUI.subtitle(
+                source: context.settings.bailianCookieSource,
+                keychainDisabled: context.settings.debugDisableKeychainAccess,
+                auto: "Automatic imports browser cookies.",
+                manual: "Paste a Cookie header or cURL capture from Bailian settings.",
+                off: "Bailian cookies are disabled.")
+        }
+
+        return [
+            ProviderSettingsPickerDescriptor(
+                id: "bailian-cookie-source",
+                title: "Cookie source",
+                subtitle: "Automatic imports browser cookies.",
+                dynamicSubtitle: cookieSubtitle,
+                binding: cookieBinding,
+                options: cookieOptions,
+                isVisible: nil,
+                onChange: nil),
+        ]
     }
 
     @MainActor
     func settingsFields(context: ProviderSettingsContext) -> [ProviderSettingsFieldDescriptor] {
-        _ = context
-        return []
+        [
+            ProviderSettingsFieldDescriptor(
+                id: "bailian-cookie",
+                title: "",
+                subtitle: "",
+                kind: .secure,
+                placeholder: "Cookie: …",
+                binding: context.stringBinding(\.bailianCookieHeader),
+                actions: [
+                    ProviderSettingsActionDescriptor(
+                        id: "bailian-open-settings",
+                        title: "Open Bailian Settings",
+                        style: .link,
+                        isVisible: nil,
+                        perform: {
+                            if let url = URL(string: "https://bailian.console.aliyun.com/") {
+                                NSWorkspace.shared.open(url)
+                            }
+                        }),
+                ],
+                isVisible: { context.settings.bailianCookieSource == .manual },
+                onActivate: { context.settings.ensureBailianCookieLoaded() }),
+        ]
     }
 }

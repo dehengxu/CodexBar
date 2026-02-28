@@ -15,9 +15,15 @@ ark is API-token based. No browser cookies.
 2. Enable **ARK**.
 3. Enter your API token in **Preferences → Providers → ARK → API token** or set `ARK_API_KEY` environment variable.
 
-## Token sources (fallback order)
+### Manual cookie import (optional)
+
+1. Open `https://ollama.com/settings` in your browser.
+2. Copy a `Cookie:` header from the Network tab.
+3. Paste it into **ARK → Cookie source → Manual**.
+
+<!--### Token sources (fallback order)
 1) Config token (`~/.codexbar/config.json` → `providers[].apiKey`).
-2) Environment variable `ARK_API_KEY`.
+2) Environment variable `ARK_API_KEY`.-->
 
 ### Config location
 - `~/.codexbar/config.json`

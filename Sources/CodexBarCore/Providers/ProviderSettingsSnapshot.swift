@@ -16,6 +16,8 @@ public struct ProviderSettingsSnapshot: Sendable {
         augment: AugmentProviderSettings? = nil,
         amp: AmpProviderSettings? = nil,
         ollama: OllamaProviderSettings? = nil,
+        ark: ArkProviderSettings? = nil,
+        bailian: BailianProviderSettings? = nil,
         jetbrains: JetBrainsProviderSettings? = nil) -> ProviderSettingsSnapshot
     {
         ProviderSettingsSnapshot(
@@ -33,6 +35,8 @@ public struct ProviderSettingsSnapshot: Sendable {
             augment: augment,
             amp: amp,
             ollama: ollama,
+            ark: ark,
+            bailian: bailian,
             jetbrains: jetbrains)
     }
 
@@ -179,6 +183,30 @@ public struct ProviderSettingsSnapshot: Sendable {
         }
     }
 
+    public struct ArkProviderSettings: Sendable {
+        public let apiRegion: String?
+        public let cookieSource: ProviderCookieSource
+        public let cookieHeader: String?
+
+        public init(apiRegion: String?, cookieSource: ProviderCookieSource, cookieHeader: String?) {
+            self.apiRegion = apiRegion
+            self.cookieSource = cookieSource
+            self.cookieHeader = cookieHeader
+        }
+    }
+
+    public struct BailianProviderSettings: Sendable {
+        public let apiRegion: String?
+        public let cookieSource: ProviderCookieSource
+        public let cookieHeader: String?
+
+        public init(apiRegion: String?, cookieSource: ProviderCookieSource, cookieHeader: String?) {
+            self.apiRegion = apiRegion
+            self.cookieSource = cookieSource
+            self.cookieHeader = cookieHeader
+        }
+    }
+
     public let debugMenuEnabled: Bool
     public let debugKeepCLISessionsAlive: Bool
     public let codex: CodexProviderSettings?
@@ -193,6 +221,8 @@ public struct ProviderSettingsSnapshot: Sendable {
     public let augment: AugmentProviderSettings?
     public let amp: AmpProviderSettings?
     public let ollama: OllamaProviderSettings?
+    public let ark: ArkProviderSettings?
+    public let bailian: BailianProviderSettings?
     public let jetbrains: JetBrainsProviderSettings?
 
     public var jetbrainsIDEBasePath: String? {
@@ -214,6 +244,8 @@ public struct ProviderSettingsSnapshot: Sendable {
         augment: AugmentProviderSettings?,
         amp: AmpProviderSettings?,
         ollama: OllamaProviderSettings?,
+        ark: ArkProviderSettings?,
+        bailian: BailianProviderSettings?,
         jetbrains: JetBrainsProviderSettings? = nil)
     {
         self.debugMenuEnabled = debugMenuEnabled
@@ -230,6 +262,8 @@ public struct ProviderSettingsSnapshot: Sendable {
         self.augment = augment
         self.amp = amp
         self.ollama = ollama
+        self.ark = ark
+        self.bailian = bailian
         self.jetbrains = jetbrains
     }
 }
@@ -247,6 +281,8 @@ public enum ProviderSettingsSnapshotContribution: Sendable {
     case augment(ProviderSettingsSnapshot.AugmentProviderSettings)
     case amp(ProviderSettingsSnapshot.AmpProviderSettings)
     case ollama(ProviderSettingsSnapshot.OllamaProviderSettings)
+    case ark(ProviderSettingsSnapshot.ArkProviderSettings)
+    case bailian(ProviderSettingsSnapshot.BailianProviderSettings)
     case jetbrains(ProviderSettingsSnapshot.JetBrainsProviderSettings)
 }
 
@@ -265,6 +301,8 @@ public struct ProviderSettingsSnapshotBuilder: Sendable {
     public var augment: ProviderSettingsSnapshot.AugmentProviderSettings?
     public var amp: ProviderSettingsSnapshot.AmpProviderSettings?
     public var ollama: ProviderSettingsSnapshot.OllamaProviderSettings?
+    public var ark: ProviderSettingsSnapshot.ArkProviderSettings?
+    public var bailian: ProviderSettingsSnapshot.BailianProviderSettings?
     public var jetbrains: ProviderSettingsSnapshot.JetBrainsProviderSettings?
 
     public init(debugMenuEnabled: Bool = false, debugKeepCLISessionsAlive: Bool = false) {
@@ -286,6 +324,8 @@ public struct ProviderSettingsSnapshotBuilder: Sendable {
         case let .augment(value): self.augment = value
         case let .amp(value): self.amp = value
         case let .ollama(value): self.ollama = value
+        case let .ark(value): self.ark = value
+        case let .bailian(value): self.bailian = value
         case let .jetbrains(value): self.jetbrains = value
         }
     }
@@ -306,6 +346,8 @@ public struct ProviderSettingsSnapshotBuilder: Sendable {
             augment: self.augment,
             amp: self.amp,
             ollama: self.ollama,
+            ark: self.ark,
+            bailian: self.bailian,
             jetbrains: self.jetbrains)
     }
 }
