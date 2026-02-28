@@ -23,8 +23,45 @@ public func runUsageSync(_ argv: [String]) {
     let jsonOnly = opts.jsonOnly || globalOpts.jsonOnly
     let continueOnError = globalOpts.continueOnError
 
+    // Load config to check enabled providers
+    let configStore = CodexBarConfigStore()
+    let config: CodexBarConfig
+    do {
+        config = try configStore.loadOrCreateDefault()
+    } catch {
+        if !jsonOnly {
+            fputs("Error loading config: \(error.localizedDescription)\n", stderr)
+        }
+        exit(CLIExitCode.configError.rawValue)
+    }
+
     // Get providers to query
-    let providers = opts.provider.asList
+    let providers: [UsageProvider]
+    let providerWasSpecified = argv.contains { $0 == "--provider" || $0 == "-p" }
+
+    if providerWasSpecified {
+        // User specified --provider, use it but check if enabled
+        let specifiedProviders = opts.provider.asList
+        let enabledProviders = Set(config.enabledProviders())
+
+        // Check if any specified provider is disabled
+        let disabledSpecified = specifiedProviders.filter { !enabledProviders.contains($0) }
+        if !disabledSpecified.isEmpty, !jsonOnly {
+            let names = disabledSpecified.map { $0.rawValue }.joined(separator: ", ")
+            fputs("Warning: Provider(s) disabled in config: \(names)\n", stderr)
+        }
+
+        providers = specifiedProviders
+    } else {
+        // No --provider, use config's enabled providers
+        let enabledFromConfig = config.enabledProviders()
+        if enabledFromConfig.isEmpty {
+            // Fallback to default if no providers enabled
+            providers = opts.provider.asList
+        } else {
+            providers = enabledFromConfig
+        }
+    }
 
     // Use a simple async wrapper
     let semaphore = DispatchSemaphore(value: 0)

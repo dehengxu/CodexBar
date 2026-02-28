@@ -17,21 +17,25 @@ import FoundationNetworking
 struct CodexBarCLI {
     static func main() {
         let args = Array(CommandLine.arguments.dropFirst())
-        let argv = effectiveArgv(args)
 
         // Handle global help/version first
-        if argv.contains("-h") || argv.contains("--help") {
-            if argv.count > 1 {
-                printHelp(for: argv.count > 1 ? argv[1] : nil)
-            } else {
-                printHelp(for: nil)
+        let hasHelp = args.contains("-h") || args.contains("--help")
+        let hasVersion = args.contains("-V") || args.contains("--version")
+
+        if hasHelp {
+            // Find the command name for help (skip --help/-h)
+            let commandForHelp = args.first { arg in
+                arg != "-h" && arg != "--help" && !arg.hasPrefix("-")
             }
+            printHelp(for: commandForHelp)
             return
         }
-        if argv.contains("-V") || argv.contains("--version") {
+        if hasVersion {
             printVersion()
             return
         }
+
+        let argv = effectiveArgv(args)
 
         // Route to command
         let command = argv.first ?? "usage"
@@ -42,6 +46,8 @@ struct CodexBarCLI {
             runCostSync(argv)
         case "config":
             runConfig(argv)
+        case "list":
+            runList(argv)
         default:
             // Default to usage if no command or looks like options
             if command.hasPrefix("-") {

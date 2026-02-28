@@ -9,7 +9,7 @@ import Glibc
 // MARK: - Help Output
 
 public func printHelp(for command: String?) {
-    if command == "usage" || command == "cost" || command == "config" {
+    if command == "usage" || command == "cost" || command == "config" || command == "list" {
         printCommandHelp(for: command!)
     } else {
         printGlobalHelp()
@@ -28,6 +28,7 @@ public func printGlobalHelp() {
       config             Config utilities
         validate         Validate config file
         dump            Print normalized config JSON
+      list               List all providers and their enabled status
 
     Options:
       -v, --verbose     Verbose output
@@ -62,6 +63,7 @@ public func printGlobalHelp() {
       5  Config error
 
     Examples:
+      codexbar list
       codexbar usage
       codexbar usage --json
       codexbar usage --provider claude
@@ -127,6 +129,22 @@ public func printCommandHelp(for command: String) {
           -f, --format         Output format (text | json)
           -j, --json           Output as JSON
           --pretty             Pretty-print JSON
+        """)
+    case "list":
+        print("""
+        list - List all available providers and their enabled status
+
+        Usage: codexbar list [options]
+
+        Options:
+          -f, --format         Output format (text | json)
+          -j, --json           Output as JSON
+          --pretty             Pretty-print JSON
+          --no-pretty          Compact JSON output
+
+        Examples:
+          codexbar list
+          codexbar list --json
         """)
     default:
         printGlobalHelp()
