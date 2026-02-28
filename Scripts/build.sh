@@ -20,15 +20,47 @@ set -euo pipefail
 # 配置
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# 打印帮助信息
+print_help() {
+    cat << EOF
+CodexBar 构建脚本
+
+用法:
+  ./scripts/build.sh [命令] [选项]
+
+命令:
+  (无参数)        默认 Debug 构建
+  release         Release 构建
+  app             生成 .app 包 (Debug)
+  app release     生成 .app 包 (Release)
+  dmg             生成 .dmg 包 (Debug)
+  dmg release     生成 .dmg 包 (Release)
+  help            显示此帮助信息
+
+示例:
+  ./scripts/build.sh              # Debug 构建
+  ./scripts/build.sh release      # Release 构建
+  ./scripts/build.sh app release   # 生成 Release 版 .app
+  ./scripts/build.sh dmg release   # 生成 Release 版 .dmg
+EOF
+}
+
 # 解析参数
-BUILD_TYPE="${1:-debug}"
+BUILD_TYPE="${1:-help}"
 TARGET="${2:-}"
+
+# 如果没有参数或请求帮助，显示帮助信息
+if [[ "${BUILD_TYPE}" == "help" || "${BUILD_TYPE}" == "-h" || "${BUILD_TYPE}" == "--help" ]]; then
+    print_help
+    exit 0
+fi
 
 # 验证构建类型
 case "${BUILD_TYPE}" in
     debug|release|app|dmg) ;;
     *) echo "错误: 无效的构建类型 '${BUILD_TYPE}'" >&2
-       echo "用法: $0 [debug|release|app|dmg] [release]" >&2
+       echo "" >&2
+       print_help >&2
        exit 1
        ;;
 esac
