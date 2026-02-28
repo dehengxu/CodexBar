@@ -217,6 +217,28 @@ public struct ArkUsageFetcher: Sendable {
             planName: nil,
             updatedAt: Date())
     }
+    /// Generates a curl command for testing the ARK API
+    public static func curlCommand(
+        cookieHeader: String? = nil,
+        environment: [String: String] = ProcessInfo.processInfo.environment) -> String
+    {
+        let url = Self.resolveQuotaURL(environment: environment)
+        var lines: [String] = []
+
+        lines.append("curl '\(url.absoluteString)' \\")
+
+        lines.append("  -H 'accept: application/json' \\")
+        lines.append("  -H 'content-type: application/json' \\")
+
+        if let cookie = cookieHeader, !cookie.isEmpty {
+            let escapedCookie = cookie.replacingOccurrences(of: "'", with: "'\\''")
+            lines.append("  -b '\(escapedCookie)' \\")
+        }
+
+        lines.append("  --data-raw '{}'")
+
+        return lines.joined(separator: "\n")
+    }
 }
 
 /// Errors that can occur during ARK usage fetching
