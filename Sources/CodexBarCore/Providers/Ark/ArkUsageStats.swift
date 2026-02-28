@@ -84,7 +84,7 @@ public struct ArkLimitEntry: Sendable {
 
 /// ARK quota API response
 private struct ArkQuotaResponse: Decodable {
-    let Resultt: ArkQuotaResult?
+    let Result: ArkQuotaResult?
 }
 
 private struct ArkQuotaResult: Decodable {
@@ -228,7 +228,7 @@ public struct ArkUsageFetcher: Sendable {
         let decoder = JSONDecoder()
         let apiResponse = try decoder.decode(ArkQuotaResponse.self, from: data)
 
-        guard let result = apiResponse.Resultt else {
+        guard let result = apiResponse.Result else {
             throw ArkUsageError.parseFailed("Missing Result")
         }
 

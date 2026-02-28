@@ -39,15 +39,15 @@ ark is API-token based. No browser cookies.
 
 ## Parsing + mapping
 - Response fields:
-  - `Resultt.QuotaUsage[0].Level` → Level name.(session level)
-  - `Resultt.QuotaUsage[0].Percent` → usage percentage (number).
-  - `Resultt.QuotaUsage[0].ResetTimestamp` → Timestamp when reset session usage to 100% (number).
-  - `Resultt.QuotaUsage[1].Level` → Level name.(weekly)
-  - `Resultt.QuotaUsage[1].Percent` → usage percentage (number).
-  - `Resultt.QuotaUsage[1].ResetTimestamp` → Timestamp when reset weekly usage to 100% (number).
-  - `Resultt.QuotaUsage[2].Level` → Level name.(monthly)
-  - `Resultt.QuotaUsage[2].Percent` → usage percentage (number).
-  - `Resultt.QuotaUsage[2].ResetTimestamp` → Timestamp when reset monthly usage to 100% (number).
+  - `Result.QuotaUsage[0].Level` → Level name.(session level)
+  - `Result.QuotaUsage[0].Percent` → usage percentage (number).
+  - `Result.QuotaUsage[0].ResetTimestamp` → Timestamp when reset session usage to 100% (number).
+  - `Result.QuotaUsage[1].Level` → Level name.(weekly)
+  - `Result.QuotaUsage[1].Percent` → usage percentage (number).
+  - `Result.QuotaUsage[1].ResetTimestamp` → Timestamp when reset weekly usage to 100% (number).
+  - `Result.QuotaUsage[2].Level` → Level name.(monthly)
+  - `Result.QuotaUsage[2].Percent` → usage percentage (number).
+  - `Result.QuotaUsage[2].ResetTimestamp` → Timestamp when reset monthly usage to 100% (number).
 - Limit types:
   - `Session usage` → primary (usage percentage and reset timestamp).
   - `Weekly usage` → secondary (usage percentage and reset timestamp).
@@ -57,7 +57,7 @@ ark is API-token based. No browser cookies.
 - Reset:
   - `nextResetTime` (epoch ms) → date.
 - Usage details:
-  - `Resultt.QuotaUsage[]` per level (usage list).
+  - `Result.QuotaUsage[]` per level (usage list).
 
 ## Key files
 - `Sources/CodexBarCore/Providers/Ark/ArkUsageStats.swift`

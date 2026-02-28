@@ -61,8 +61,10 @@ public struct ProviderMetadata: Sendable {
     public let displayName: String
     public let sessionLabel: String
     public let weeklyLabel: String
+    public let monthlyLabel: String?
     public let opusLabel: String?
     public let supportsOpus: Bool
+    public let supportsTertiary: Bool
     public let supportsCredits: Bool
     public let creditsHint: String
     public let toggleTitle: String
@@ -85,8 +87,10 @@ public struct ProviderMetadata: Sendable {
         displayName: String,
         sessionLabel: String,
         weeklyLabel: String,
+        monthlyLabel: String? = nil,
         opusLabel: String?,
         supportsOpus: Bool,
+        supportsTertiary: Bool = false,
         supportsCredits: Bool,
         creditsHint: String,
         toggleTitle: String,
@@ -105,8 +109,10 @@ public struct ProviderMetadata: Sendable {
         self.displayName = displayName
         self.sessionLabel = sessionLabel
         self.weeklyLabel = weeklyLabel
+        self.monthlyLabel = monthlyLabel
         self.opusLabel = opusLabel
         self.supportsOpus = supportsOpus
+        self.supportsTertiary = supportsTertiary
         self.supportsCredits = supportsCredits
         self.creditsHint = creditsHint
         self.toggleTitle = toggleTitle

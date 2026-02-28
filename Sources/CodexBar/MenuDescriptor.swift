@@ -160,11 +160,13 @@ struct MenuDescriptor {
                     entries.append(.text(paceSummary, .secondary))
                 }
             }
-            if meta.supportsOpus, let opus = snap.tertiary {
+            // Show tertiary as monthly if supportsTertiary or supportsOpus
+            let tertiaryTitle = meta.monthlyLabel ?? meta.opusLabel
+            if let tertiaryTitle = tertiaryTitle, let tertiary = snap.tertiary {
                 Self.appendRateWindow(
                     entries: &entries,
-                    title: meta.opusLabel ?? "Sonnet",
-                    window: opus,
+                    title: tertiaryTitle,
+                    window: tertiary,
                     resetStyle: resetStyle,
                     showUsed: settings.usageBarsShowUsed)
             }

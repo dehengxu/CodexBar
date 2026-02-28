@@ -866,13 +866,15 @@ extension UsageMenuCardView.Model {
                 pacePercent: paceDetail?.pacePercent,
                 paceOnTop: paceDetail?.paceOnTop ?? true))
         }
-        if input.metadata.supportsOpus, let opus = snapshot.tertiary {
+        // Show tertiary as monthly if supportsTertiary or supportsOpus
+        let tertiaryTitle = input.metadata.monthlyLabel ?? input.metadata.opusLabel
+        if let tertiaryTitle = tertiaryTitle, let tertiary = snapshot.tertiary {
             metrics.append(Metric(
                 id: "tertiary",
-                title: input.metadata.opusLabel ?? "Sonnet",
-                percent: Self.clamped(input.usageBarsShowUsed ? opus.usedPercent : opus.remainingPercent),
+                title: tertiaryTitle,
+                percent: Self.clamped(input.usageBarsShowUsed ? tertiary.usedPercent : tertiary.remainingPercent),
                 percentStyle: percentStyle,
-                resetText: Self.resetText(for: opus, style: input.resetTimeDisplayStyle, now: input.now),
+                resetText: Self.resetText(for: tertiary, style: input.resetTimeDisplayStyle, now: input.now),
                 detailText: nil,
                 detailLeftText: nil,
                 detailRightText: nil,
