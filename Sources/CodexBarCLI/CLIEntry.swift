@@ -10,6 +10,22 @@ import Foundation
 import FoundationNetworking
 #endif
 
+// MARK: - Exit Codes
+
+enum CLIExitCode: Int32 {
+    case success = 0
+    case generalError = 1
+    case providerNotFound = 2
+    case parseError = 3
+    case timeout = 4
+    case configError = 5
+}
+
+// Thread-safe box for exit code
+final class ExitCodeBox: @unchecked Sendable {
+    var value: Int32 = CLIExitCode.success.rawValue
+}
+
 // MARK: - CLI Entry Point
 
 @main
@@ -48,7 +64,7 @@ struct CodexBarCLI {
             } else {
                 fputs("Unknown command: \(command)\n", stderr)
                 fputs("Run 'codexbar --help' for usage information.\n", stderr)
-                exit(1)
+                exit(CLIExitCode.generalError.rawValue)
             }
         }
     }
@@ -75,6 +91,7 @@ struct GlobalOptions {
     var format: OutputFormat = .text
     var jsonOnly: Bool = false
     var pretty: Bool = false
+    var continueOnError: Bool = false
 }
 
 func parseGlobalOptions(_ argv: [String]) -> GlobalOptions {
@@ -111,6 +128,9 @@ func parseGlobalOptions(_ argv: [String]) -> GlobalOptions {
             i += 1
         case "--pretty":
             opts.pretty = true
+            i += 1
+        case "--continue-on-error":
+            opts.continueOnError = true
             i += 1
         default:
             i += 1
@@ -165,7 +185,7 @@ struct UsageOptions {
     var noColor: Bool = false
     var pretty: Bool = false
     var status: Bool = false
-    var source: String?
+    var source: ProviderSourceMode?
     var webTimeout: Double?
 }
 
@@ -252,11 +272,11 @@ func parseUsageOptions(_ argv: [String]) -> (options: UsageOptions, remaining: [
             opts.status = true
             i += 1
         case "--web":
-            opts.source = "web"
+            opts.source = .web
             i += 1
         case "--source":
             if i + 1 < argv.count {
-                opts.source = argv[i + 1]
+                opts.source = ProviderSourceMode(rawValue: argv[i + 1])
                 i += 2
             } else {
                 i += 1
@@ -289,6 +309,7 @@ struct CostOptions {
     var verbose: Bool = false
     var jsonOutput: Bool = false
     var logLevel: String?
+    var provider: ProviderSelection = .both
     var format: OutputFormat = .text
     var jsonOnly: Bool = false
     var pretty: Bool = false
@@ -318,6 +339,20 @@ func parseCostOptions(_ argv: [String]) -> (options: CostOptions, remaining: [St
         case "--log-level":
             if i + 1 < argv.count {
                 opts.logLevel = argv[i + 1]
+                i += 2
+            } else {
+                i += 1
+            }
+        case "--provider", "-p":
+            if i + 1 < argv.count {
+                let value = argv[i + 1].lowercased()
+                if value == "both" {
+                    opts.provider = .both
+                } else if value == "all" {
+                    opts.provider = .all
+                } else if let provider = ProviderDescriptorRegistry.cliNameMap[value] {
+                    opts.provider = .single(provider)
+                }
                 i += 2
             } else {
                 i += 1
@@ -367,19 +402,31 @@ func runUsageSync(_ argv: [String]) {
     let format = globalOpts.format == .json ? .json : opts.format
     let pretty = opts.pretty || globalOpts.pretty
     let jsonOnly = opts.jsonOnly || globalOpts.jsonOnly
+    let continueOnError = globalOpts.continueOnError
+
+    // Get providers to query
+    let providers = opts.provider.asList
 
     // Use a simple async wrapper
     let semaphore = DispatchSemaphore(value: 0)
+    let exitCodeBox = ExitCodeBox()
 
     Task {
-        let result = await runUsageAsync(format: format, pretty: pretty, jsonOnly: jsonOnly)
+        let code = await runUsageForProviders(
+            providers: providers,
+            format: format,
+            pretty: pretty,
+            jsonOnly: jsonOnly,
+            continueOnError: continueOnError,
+            sourceMode: opts.source,
+            webTimeout: opts.webTimeout
+        )
+        exitCodeBox.value = code
         semaphore.signal()
-        if !result {
-            exit(1)
-        }
     }
 
     semaphore.wait()
+    exit(exitCodeBox.value)
 }
 
 func runCostSync(_ argv: [String]) {
@@ -394,91 +441,279 @@ func runCostSync(_ argv: [String]) {
     let format = globalOpts.format == .json ? .json : opts.format
     let pretty = opts.pretty || globalOpts.pretty
     let jsonOnly = opts.jsonOnly || globalOpts.jsonOnly
+    let continueOnError = globalOpts.continueOnError
+
+    // Get providers to query (only those supporting cost)
+    let providers = opts.provider.asList.filter { provider in
+        // Only Claude and Codex support cost usage currently
+        provider == .claude || provider == .codex
+    }
+
+    if providers.isEmpty {
+        if !jsonOnly {
+            fputs("Error: No providers support cost usage (only claude and codex)\n", stderr)
+        }
+        exit(CLIExitCode.providerNotFound.rawValue)
+    }
 
     let semaphore = DispatchSemaphore(value: 0)
+    let exitCodeBox = ExitCodeBox()
 
     Task {
-        let result = await runCostAsync(format: format, pretty: pretty, jsonOnly: jsonOnly, refresh: opts.refresh)
+        let code = await runCostForProviders(
+            providers: providers,
+            format: format,
+            pretty: pretty,
+            jsonOnly: jsonOnly,
+            continueOnError: continueOnError,
+            refresh: opts.refresh
+        )
+        exitCodeBox.value = code
         semaphore.signal()
-        if !result {
-            exit(1)
-        }
     }
 
     semaphore.wait()
+    exit(exitCodeBox.value)
 }
 
-// MARK: - Async Commands
+// MARK: - Async Commands with Provider Filtering
 
-func runUsageAsync(format: OutputFormat, pretty: Bool, jsonOnly: Bool) async -> Bool {
+func runUsageForProviders(
+    providers: [UsageProvider],
+    format: OutputFormat,
+    pretty: Bool,
+    jsonOnly: Bool,
+    continueOnError: Bool,
+    sourceMode: ProviderSourceMode?,
+    webTimeout: Double?
+) async -> Int32 {
+    let browserDetection = BrowserDetection()
     let fetcher = UsageFetcher()
+    let claudeFetcher = ClaudeUsageFetcher(browserDetection: browserDetection)
 
-    do {
-        let snapshot = try await fetcher.loadLatestUsage()
+    var results: [ProviderResult] = []
+    var hasError = false
 
-        switch format {
-        case .text:
-            let text = renderUsageText(snapshot: snapshot)
-            print(text)
-        case .json:
-            let payload = makeProviderPayload(snapshot: snapshot)
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = pretty ? [.prettyPrinted, .sortedKeys] : [.sortedKeys]
-            if let data = try? encoder.encode(payload), let str = String(data: data, encoding: .utf8) {
-                print(str)
+    for provider in providers {
+        let descriptor = ProviderDescriptorRegistry.descriptor(for: provider)
+
+        // Create fetch context
+        let context = ProviderFetchContext(
+            runtime: .cli,
+            sourceMode: sourceMode ?? .auto,
+            includeCredits: true,
+            webTimeout: webTimeout ?? 60,
+            webDebugDumpHTML: false,
+            verbose: false,
+            env: ProcessInfo.processInfo.environment,
+            settings: nil,
+            fetcher: fetcher,
+            claudeFetcher: claudeFetcher,
+            browserDetection: browserDetection
+        )
+
+        do {
+            let result = try await descriptor.fetch(context: context)
+            results.append(ProviderResult(
+                provider: provider,
+                success: true,
+                usage: result.usage,
+                credits: result.credits,
+                error: nil
+            ))
+        } catch {
+            hasError = true
+            results.append(ProviderResult(
+                provider: provider,
+                success: false,
+                usage: nil,
+                credits: nil,
+                error: error
+            ))
+
+            if !continueOnError {
+                break
             }
         }
-        return true
-    } catch {
-        if format == .text && !jsonOnly {
-            fputs("Error: \(error.localizedDescription)\n", stderr)
-        }
-        if format == .json {
-            let payload = makeErrorPayload(error: error)
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = pretty ? [.prettyPrinted, .sortedKeys] : [.sortedKeys]
-            if let data = try? encoder.encode(payload), let str = String(data: data, encoding: .utf8) {
-                print(str)
-            }
-        }
-        return false
     }
+
+    // Output results
+    switch format {
+    case .text:
+        outputUsageText(results: results, jsonOnly: jsonOnly)
+    case .json:
+        outputUsageJSON(results: results, pretty: pretty, jsonOnly: jsonOnly)
+    }
+
+    return hasError ? CLIExitCode.generalError.rawValue : CLIExitCode.success.rawValue
 }
 
-func runCostAsync(format: OutputFormat, pretty: Bool, jsonOnly: Bool, refresh: Bool) async -> Bool {
+func runCostForProviders(
+    providers: [UsageProvider],
+    format: OutputFormat,
+    pretty: Bool,
+    jsonOnly: Bool,
+    continueOnError: Bool,
+    refresh: Bool
+) async -> Int32 {
     let fetcher = CostUsageFetcher()
+    var results: [CostResult] = []
+    var hasError = false
 
-    do {
-        let snapshot = try await fetcher.loadTokenSnapshot(provider: .claude, forceRefresh: refresh)
+    for provider in providers {
+        do {
+            let snapshot = try await fetcher.loadTokenSnapshot(provider: provider, forceRefresh: refresh)
+            results.append(CostResult(
+                provider: provider,
+                success: true,
+                snapshot: snapshot,
+                error: nil
+            ))
+        } catch {
+            hasError = true
+            results.append(CostResult(
+                provider: provider,
+                success: false,
+                snapshot: nil,
+                error: error
+            ))
 
-        switch format {
-        case .text:
-            let text = renderCostText(snapshot: snapshot)
-            print(text)
-        case .json:
-            let payload = makeCostPayload(snapshot: snapshot, error: nil)
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = pretty ? [.prettyPrinted, .sortedKeys] : [.sortedKeys]
-            if let data = try? encoder.encode(payload), let str = String(data: data, encoding: .utf8) {
-                print(str)
+            if !continueOnError {
+                break
             }
         }
-        return true
-    } catch {
-        if format == .text && !jsonOnly {
-            fputs("Error: \(error.localizedDescription)\n", stderr)
-        }
-        if format == .json {
-            let payload = makeCostErrorPayload(error: error)
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = pretty ? [.prettyPrinted, .sortedKeys] : [.sortedKeys]
-            if let data = try? encoder.encode(payload), let str = String(data: data, encoding: .utf8) {
-                print(str)
+    }
+
+    // Output results
+    switch format {
+    case .text:
+        outputCostText(results: results, jsonOnly: jsonOnly)
+    case .json:
+        outputCostJSON(results: results, pretty: pretty, jsonOnly: jsonOnly)
+    }
+
+    return hasError ? CLIExitCode.generalError.rawValue : CLIExitCode.success.rawValue
+}
+
+// MARK: - Result Types
+
+struct ProviderResult {
+    let provider: UsageProvider
+    let success: Bool
+    let usage: UsageSnapshot?
+    let credits: CreditsSnapshot?
+    let error: Error?
+}
+
+struct CostResult {
+    let provider: UsageProvider
+    let success: Bool
+    let snapshot: CostUsageTokenSnapshot?
+    let error: Error?
+}
+
+// MARK: - Output Formatting
+
+func outputUsageText(results: [ProviderResult], jsonOnly: Bool) {
+    var lines: [String] = []
+
+    for result in results {
+        if result.success, let usage = result.usage {
+            lines.append("== \(result.provider.rawValue) ==")
+
+            if let primary = usage.primary {
+                lines.append("Primary: \(String(format: "%.1f", primary.usedPercent))% used")
+                if let resetsAt = primary.resetsAt {
+                    lines.append("Resets: \(resetsAt)")
+                }
+            }
+
+            if let secondary = usage.secondary {
+                lines.append("Secondary: \(String(format: "%.1f", secondary.usedPercent))% used")
+            }
+
+            if let identity = usage.identity, let email = identity.accountEmail {
+                lines.append("Account: \(email)")
+            }
+        } else if let error = result.error {
+            if !jsonOnly {
+                lines.append("== \(result.provider.rawValue) ==")
+                lines.append("Error: \(error.localizedDescription)")
             }
         }
-        return false
+    }
+
+    if !lines.isEmpty {
+        print(lines.joined(separator: "\n"))
     }
 }
+
+func outputUsageJSON(results: [ProviderResult], pretty: Bool, jsonOnly: Bool) {
+    let payloads = results.map { result -> ProviderPayload in
+        ProviderPayload(
+            provider: result.provider.rawValue,
+            usedPercent: result.usage?.primary?.usedPercent,
+            resetsAt: result.usage?.primary?.resetsAt,
+            accountEmail: result.usage?.identity?.accountEmail,
+            updatedAt: result.usage?.updatedAt ?? Date(),
+            error: result.success ? nil : result.error?.localizedDescription
+        )
+    }
+
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = pretty ? [.prettyPrinted, .sortedKeys] : [.sortedKeys]
+    encoder.dateEncodingStrategy = .iso8601
+
+    if let data = try? encoder.encode(payloads), let str = String(data: data, encoding: .utf8) {
+        print(str)
+    }
+}
+
+func outputCostText(results: [CostResult], jsonOnly: Bool) {
+    var lines: [String] = []
+
+    for result in results {
+        if result.success, let snapshot = result.snapshot {
+            lines.append("== \(result.provider.rawValue) Cost ==")
+
+            if let sessionCost = snapshot.sessionCostUSD {
+                lines.append("Session: $\(String(format: "%.2f", sessionCost))")
+            }
+
+            if let monthlyCost = snapshot.last30DaysCostUSD {
+                lines.append("Last 30 days: $\(String(format: "%.2f", monthlyCost))")
+            }
+        } else if let error = result.error, !jsonOnly {
+            lines.append("== \(result.provider.rawValue) ==")
+            lines.append("Error: \(error.localizedDescription)")
+        }
+    }
+
+    if !lines.isEmpty {
+        print(lines.joined(separator: "\n"))
+    }
+}
+
+func outputCostJSON(results: [CostResult], pretty: Bool, jsonOnly: Bool) {
+    let payloads = results.map { result -> CostPayload in
+        CostPayload(
+            provider: result.provider.rawValue,
+            sessionCostUSD: result.snapshot?.sessionCostUSD,
+            last30DaysCostUSD: result.snapshot?.last30DaysCostUSD,
+            error: result.success ? nil : result.error?.localizedDescription
+        )
+    }
+
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = pretty ? [.prettyPrinted, .sortedKeys] : [.sortedKeys]
+    encoder.dateEncodingStrategy = .iso8601
+
+    if let data = try? encoder.encode(payloads), let str = String(data: data, encoding: .utf8) {
+        print(str)
+    }
+}
+
+// MARK: - Config Commands
 
 func runConfig(_ argv: [String]) {
     let subcommand = argv.count > 1 ? argv[1] : "validate"
@@ -494,7 +729,7 @@ func runConfig(_ argv: [String]) {
     default:
         fputs("Unknown config subcommand: \(subcommand)\n", stderr)
         fputs("Run 'codexbar --help' for usage information.\n", stderr)
-        exit(1)
+        exit(CLIExitCode.generalError.rawValue)
     }
 }
 
@@ -516,7 +751,7 @@ func runConfigValidate() {
         }
     }
 
-    exit(hasErrors ? 1 : 0)
+    exit(hasErrors ? CLIExitCode.configError.rawValue : CLIExitCode.success.rawValue)
 }
 
 func runConfigDump() {
@@ -526,44 +761,7 @@ func runConfigDump() {
     if let data = try? encoder.encode(config), let str = String(data: data, encoding: .utf8) {
         print(str)
     }
-    exit(0)
-}
-
-// MARK: - Rendering
-
-func renderUsageText(snapshot: UsageSnapshot) -> String {
-    var lines: [String] = []
-
-    if let primary = snapshot.primary {
-        lines.append("Primary: \(String(format: "%.1f", primary.usedPercent))% used")
-        if let resetsAt = primary.resetsAt {
-            lines.append("Resets: \(resetsAt)")
-        }
-    }
-
-    if let secondary = snapshot.secondary {
-        lines.append("Secondary: \(String(format: "%.1f", secondary.usedPercent))% used")
-    }
-
-    if let identity = snapshot.identity, let email = identity.accountEmail {
-        lines.append("Account: \(email)")
-    }
-
-    return lines.joined(separator: "\n")
-}
-
-func renderCostText(snapshot: CostUsageTokenSnapshot) -> String {
-    var lines: [String] = []
-
-    if let sessionCost = snapshot.sessionCostUSD {
-        lines.append("Session: $\(String(format: "%.2f", sessionCost))")
-    }
-
-    if let monthlyCost = snapshot.last30DaysCostUSD {
-        lines.append("Last 30 days: $\(String(format: "%.2f", monthlyCost))")
-    }
-
-    return lines.joined(separator: "\n")
+    exit(CLIExitCode.success.rawValue)
 }
 
 // MARK: - Payloads
@@ -574,26 +772,7 @@ struct ProviderPayload: Codable {
     let resetsAt: Date?
     let accountEmail: String?
     let updatedAt: Date
-}
-
-func makeProviderPayload(snapshot: UsageSnapshot) -> ProviderPayload {
-    ProviderPayload(
-        provider: "codexbar",
-        usedPercent: snapshot.primary?.usedPercent,
-        resetsAt: snapshot.primary?.resetsAt,
-        accountEmail: snapshot.identity?.accountEmail,
-        updatedAt: snapshot.updatedAt
-    )
-}
-
-func makeErrorPayload(error: Error) -> ProviderPayload {
-    ProviderPayload(
-        provider: "error",
-        usedPercent: nil,
-        resetsAt: nil,
-        accountEmail: nil,
-        updatedAt: Date()
-    )
+    let error: String?
 }
 
 struct CostPayload: Codable {
@@ -601,24 +780,6 @@ struct CostPayload: Codable {
     let sessionCostUSD: Double?
     let last30DaysCostUSD: Double?
     let error: String?
-}
-
-func makeCostPayload(snapshot: CostUsageTokenSnapshot, error: Error?) -> CostPayload {
-    CostPayload(
-        provider: "claude",
-        sessionCostUSD: snapshot.sessionCostUSD,
-        last30DaysCostUSD: snapshot.last30DaysCostUSD,
-        error: error?.localizedDescription
-    )
-}
-
-func makeCostErrorPayload(error: Error) -> CostPayload {
-    CostPayload(
-        provider: "error",
-        sessionCostUSD: nil,
-        last30DaysCostUSD: nil,
-        error: error.localizedDescription
-    )
 }
 
 // MARK: - Help & Version
@@ -665,6 +826,17 @@ func printGlobalHelp() {
       --web             Alias for --source web
       --web-timeout     Web fetch timeout (seconds)
 
+    Error Handling:
+      --continue-on-error  Continue querying other providers if one fails
+
+    Exit Codes:
+      0  Success
+      1  General error
+      2  Provider not found
+      3  Parse error
+      4  Timeout
+      5  Config error
+
     Examples:
       codexbar usage
       codexbar usage --json
@@ -698,6 +870,7 @@ func printCommandHelp(for command: String) {
           --source               Data source (auto|web|cli|oauth|api)
           --web                  Alias for --source web
           --web-timeout          Web fetch timeout (seconds)
+          --continue-on-error    Continue on provider errors
         """)
     case "cost":
         print("""
@@ -707,12 +880,14 @@ func printCommandHelp(for command: String) {
 
         Options:
           -v, --verbose         Enable verbose logging
+          --provider, -p        Provider to query (claude|codex|both|all)
           -f, --format          Output format (text | json)
           -j, --json            Output as JSON
           --json-only           Emit JSON only
           --pretty              Pretty-print JSON
           --no-color            Disable ANSI colors
           --refresh             Force cache refresh
+          --continue-on-error   Continue on provider errors
         """)
     case "config":
         print("""
