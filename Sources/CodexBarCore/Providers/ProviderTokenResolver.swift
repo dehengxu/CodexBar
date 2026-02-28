@@ -63,6 +63,16 @@ public enum ProviderTokenResolver {
         self.resolveEnv(ArkSettingsReader.apiToken(environment: environment))
     }
 
+    public static func bailianToken(environment: [String: String] = ProcessInfo.processInfo.environment) -> String? {
+        self.bailianResolution(environment: environment)?.token
+    }
+
+    public static func bailianResolution(
+        environment: [String: String] = ProcessInfo.processInfo.environment) -> ProviderTokenResolution?
+    {
+        self.resolveEnv(BailianSettingsReader.apiToken(environment: environment))
+    }
+
     public static func zaiResolution(
         environment: [String: String] = ProcessInfo.processInfo.environment) -> ProviderTokenResolution?
     {
