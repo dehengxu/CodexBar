@@ -191,9 +191,10 @@ public struct BailianUsageFetcher: Sendable {
     /// Fetches usage stats from Bailian using the provided API key
     public static func fetchUsage(
         apiKey: String,
+        cookieHeader: String? = nil,
         environment: [String: String] = ProcessInfo.processInfo.environment) async throws -> BailianUsageSnapshot
     {
-        guard !apiKey.isEmpty else {
+        guard !apiKey.isEmpty || (cookieHeader != nil && !cookieHeader!.isEmpty) else {
             throw BailianUsageError.invalidCredentials
         }
 
@@ -201,9 +202,18 @@ public struct BailianUsageFetcher: Sendable {
 
         var request = URLRequest(url: quotaURL)
         request.httpMethod = "POST"
-        request.setValue(apiKey, forHTTPHeaderField: "x-ca-key")
+
+        if !apiKey.isEmpty {
+            request.setValue(apiKey, forHTTPHeaderField: "x-ca-key")
+        }
+
         request.setValue("application/json", forHTTPHeaderField: "accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // Add cookie header if provided
+        if let cookie = cookieHeader, !cookie.isEmpty {
+            request.setValue(cookie, forHTTPHeaderField: "Cookie")
+        }
 
         let (data, response) = try await URLSession.shared.data(for: request)
 

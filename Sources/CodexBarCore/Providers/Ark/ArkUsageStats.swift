@@ -128,12 +128,13 @@ public struct ArkUsageFetcher: Sendable {
         return URL(string: "https://\(host)/\(Self.quotaAPIPath)")!
     }
 
-    /// Fetches usage stats from ARK using the provided API key
+    /// Fetches usage stats from ARK using the provided API key and/or cookie
     public static func fetchUsage(
         apiKey: String,
+        cookieHeader: String? = nil,
         environment: [String: String] = ProcessInfo.processInfo.environment) async throws -> ArkUsageSnapshot
     {
-        guard !apiKey.isEmpty else {
+        guard !apiKey.isEmpty || (cookieHeader != nil && !cookieHeader!.isEmpty) else {
             throw ArkUsageError.invalidCredentials
         }
 
@@ -141,9 +142,18 @@ public struct ArkUsageFetcher: Sendable {
 
         var request = URLRequest(url: quotaURL)
         request.httpMethod = "POST"
-        request.setValue(apiKey, forHTTPHeaderField: "x-ca-key")
+
+        if !apiKey.isEmpty {
+            request.setValue(apiKey, forHTTPHeaderField: "x-ca-key")
+        }
+
         request.setValue("application/json", forHTTPHeaderField: "accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // Add cookie header if provided
+        if let cookie = cookieHeader, !cookie.isEmpty {
+            request.setValue(cookie, forHTTPHeaderField: "Cookie")
+        }
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
