@@ -110,6 +110,10 @@ private struct BailianQuotaData: Decodable {
 }
 
 private struct BailianQuotaDataV2: Decodable {
+    let data: BailianQuotaDataV2Inner?
+}
+
+private struct BailianQuotaDataV2Inner: Decodable {
     let data: BailianQuotaInnerData?
 }
 
@@ -288,7 +292,7 @@ public struct BailianUsageFetcher: Sendable {
         let decoder = JSONDecoder()
         let apiResponse = try decoder.decode(BailianQuotaResponse.self, from: data)
 
-        guard let quotaData = apiResponse.data?.DataV2?.data else {
+        guard let quotaData = apiResponse.data?.DataV2?.data?.data else {
             throw BailianUsageError.parseFailed("Missing data")
         }
 
