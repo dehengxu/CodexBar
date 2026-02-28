@@ -53,6 +53,16 @@ public enum ProviderTokenResolver {
         self.openRouterResolution(environment: environment)?.token
     }
 
+    public static func arkToken(environment: [String: String] = ProcessInfo.processInfo.environment) -> String? {
+        self.arkResolution(environment: environment)?.token
+    }
+
+    public static func arkResolution(
+        environment: [String: String] = ProcessInfo.processInfo.environment) -> ProviderTokenResolution?
+    {
+        self.resolveEnv(ArkSettingsReader.apiToken(environment: environment))
+    }
+
     public static func zaiResolution(
         environment: [String: String] = ProcessInfo.processInfo.environment) -> ProviderTokenResolution?
     {

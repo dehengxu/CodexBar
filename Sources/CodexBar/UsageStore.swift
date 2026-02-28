@@ -1124,6 +1124,7 @@ extension UsageStore {
                 .kimi: "Kimi debug log not yet implemented",
                 .kimik2: "Kimi K2 debug log not yet implemented",
                 .jetbrains: "JetBrains AI debug log not yet implemented",
+                .ark: "ARK debug log not yet implemented",
             ]
             let text: String
             switch provider {
@@ -1187,7 +1188,7 @@ extension UsageStore {
                 let hasAny = resolution != nil
                 let source = resolution?.source.rawValue ?? "none"
                 text = "WARP_API_KEY=\(hasAny ? "present" : "missing") source=\(source)"
-            case .gemini, .antigravity, .opencode, .factory, .copilot, .vertexai, .kiro, .kimi, .kimik2, .jetbrains:
+            case .gemini, .antigravity, .opencode, .factory, .copilot, .vertexai, .kiro, .kimi, .kimik2, .jetbrains, .ark:
                 text = unimplementedDebugLogMessages[provider] ?? "Debug log not yet implemented"
             }
             return text

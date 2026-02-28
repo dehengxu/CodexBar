@@ -34,6 +34,7 @@ enum ProviderImplementationRegistry {
         case .synthetic: return SyntheticProviderImplementation()
         case .openrouter: return OpenRouterProviderImplementation()
         case .warp: return WarpProviderImplementation()
+        case .ark: return ArkProviderImplementation()
         }
     }
 
