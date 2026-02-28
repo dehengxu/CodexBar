@@ -164,32 +164,6 @@ build_app() {
     echo "产物路径: ${app_bundle}"
 }
 
-# 检查并安装 create-dmg 工具
-install_create_dmg() {
-    if command -v create-dmg &> /dev/null; then
-        echo ">> create-dmg 已安装"
-        return 0
-    fi
-
-    echo ">> 正在安装 create-dmg..."
-
-    # 检查 Homebrew 是否可用
-    if ! command -v brew &> /dev/null; then
-        echo "错误: Homebrew 未安装，请先安装 Homebrew: https://brew.sh" >&2
-        exit 1
-    fi
-
-    # 安装 create-dmg
-    brew install create-dmg
-
-    if command -v create-dmg &> /dev/null; then
-        echo ">> create-dmg 安装成功"
-    else
-        echo "错误: create-dmg 安装失败" >&2
-        exit 1
-    fi
-}
-
 # 生成 .dmg 包
 build_dmg() {
     local conf="$1"
@@ -205,10 +179,7 @@ build_dmg() {
     # 1. 先构建 .app
     build_app "${conf}"
 
-    # 2. 检查并安装 create-dmg
-    install_create_dmg
-
-    # 3. 创建 DMG
+    # 2. 创建 DMG
     local app_bundle="${ROOT_DIR}/CodexBar.app"
     local dmg_path="${ROOT_DIR}/CodexBar-${config_upper}.dmg"
 
@@ -219,25 +190,13 @@ build_dmg() {
 
     echo ">> 创建 DMG 文件..."
 
-    # 创建一个临时目录来包含 .app
-    local temp_dir="${ROOT_DIR}/.dmg_temp"
-    rm -rf "${temp_dir}"
-    mkdir -p "${temp_dir}"
-    cp -R "${app_bundle}" "${temp_dir}/"
-
-    # 使用 create-dmg 创建 DMG (新版本语法)
-    create-dmg \
-        --volname "CodexBar" \
-        --window-pos 200 120 \
-        --window-size 600 400 \
-        --app-drop-link 480 185 \
-        --icon-size 100 \
-        --hide-extension "CodexBar.app" \
-        "${dmg_path}" \
-        "${temp_dir}"
-
-    # 清理临时目录
-    rm -rf "${temp_dir}"
+    # 使用 hdiutil 直接创建 DMG，不自动挂载
+    hdiutil create \
+        -volname "CodexBar" \
+        -srcfolder "${app_bundle}" \
+        -format UDZO \
+        -quiet \
+        "${dmg_path}"
 
     echo "=============================================="
     echo "  .dmg 包构建成功!"
