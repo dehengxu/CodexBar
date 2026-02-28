@@ -5,6 +5,8 @@
 # 用法:
 #   ./scripts/build.sh              # Debug 构建 (默认)
 #   ./scripts/build.sh release      # Release 构建
+#   ./scripts/build.sh cli          # 单独构建 CLI (Debug)
+#   ./scripts/build.sh cli release  # 单独构建 CLI (Release)
 #   ./scripts/build.sh app         # 生成 .app 包 (Debug)
 #   ./scripts/build.sh app release # 生成 .app 包 (Release)
 #   ./scripts/build.sh dmg         # 生成 .dmg 包 (Debug)
@@ -31,6 +33,8 @@ CodexBar 构建脚本
 命令:
   (无参数)        默认 Debug 构建
   release         Release 构建
+  cli             单独构建 CLI (Debug)
+  cli release     单独构建 CLI (Release)
   app             生成 .app 包 (Debug)
   app release     生成 .app 包 (Release)
   dmg             生成 .dmg 包 (Debug)
@@ -40,6 +44,7 @@ CodexBar 构建脚本
 示例:
   ./scripts/build.sh              # Debug 构建
   ./scripts/build.sh release      # Release 构建
+  ./scripts/build.sh cli release   # 构建 Release 版 CLI
   ./scripts/build.sh app release   # 生成 Release 版 .app
   ./scripts/build.sh dmg release   # 生成 Release 版 .dmg
 EOF
@@ -57,7 +62,7 @@ fi
 
 # 验证构建类型
 case "${BUILD_TYPE}" in
-    debug|release|app|dmg) ;;
+    debug|release|app|dmg|cli) ;;
     *) echo "错误: 无效的构建类型 '${BUILD_TYPE}'" >&2
        echo "" >&2
        print_help >&2
@@ -66,7 +71,7 @@ case "${BUILD_TYPE}" in
 esac
 
 # 构建配置
-if [[ "${BUILD_TYPE}" == "app" || "${BUILD_TYPE}" == "dmg" ]]; then
+if [[ "${BUILD_TYPE}" == "app" || "${BUILD_TYPE}" == "dmg" || "${BUILD_TYPE}" == "cli" ]]; then
     if [[ "${TARGET}" == "release" ]]; then
         BUILD_CONFIG="release"
     else
@@ -79,6 +84,51 @@ else
         BUILD_CONFIG="debug"
     fi
 fi
+
+# 单独构建 CLI
+build_cli() {
+    local conf="$1"
+    local config_upper=$(printf "%s" "$conf" | tr '[:lower:]' '[:upper:]')
+
+    echo "=============================================="
+    echo "  构建 CodexBarCLI"
+    echo "  配置: ${config_upper}"
+    echo "=============================================="
+
+    cd "${ROOT_DIR}"
+
+    # 构建 CLI
+    echo ">> 构建 CodexBarCLI..."
+    if [[ "${conf}" == "release" ]]; then
+        swift build -c release --product CodexBarCLI
+    else
+        swift build --product CodexBarCLI
+    fi
+
+    # 创建输出目录
+    local cli_output="${ROOT_DIR}/.build/${conf}"
+    local cli_bin="${cli_output}/codexbar"
+
+    # 复制可执行文件
+    cp "${ROOT_DIR}/.build/${conf}/codexbar" "${cli_bin}" 2>/dev/null || \
+    cp "${cli_output}/CodexBarCLI" "${cli_bin}" 2>/dev/null || true
+
+    # 检查是否存在
+    if [[ -f "${cli_output}/CodexBarCLI" ]]; then
+        echo "=============================================="
+        echo "  CLI 构建成功!"
+        echo "=============================================="
+        echo "产物路径: ${cli_output}/CodexBarCLI"
+        echo ""
+        echo "安装到系统 (需要 sudo):"
+        echo "  sudo cp ${cli_output}/CodexBarCLI /usr/local/bin/codexbar"
+        echo "  或者:"
+        echo "  sudo ln -s ${cli_output}/CodexBarCLI /usr/local/bin/codexbar"
+    else
+        echo "错误: CLI 构建失败" >&2
+        exit 1
+    fi
+}
 
 # 生成 .app 包
 build_app() {
@@ -98,6 +148,14 @@ build_app() {
         swift build -c release
     else
         swift build -c debug
+    fi
+
+    # 1.5 构建 CLI
+    echo ">> 构建 CodexBarCLI..."
+    if [[ "${conf}" == "release" ]]; then
+        swift build -c release --product CodexBarCLI
+    else
+        swift build --product CodexBarCLI
     fi
 
     # 2. 创建 .app 目录结构
@@ -151,11 +209,24 @@ build_app() {
         echo "   - 警告: 未找到 Sparkle.framework"
     fi
 
-    # 9. 嵌入其他依赖框架 (KeyboardShortcuts)
+    # 8. 嵌入其他依赖框架 (KeyboardShortcuts)
     if [[ -d "${ROOT_DIR}/.build/${conf}/KeyboardShortcuts.framework" ]]; then
         cp -R "${ROOT_DIR}/.build/${conf}/KeyboardShortcuts.framework" "${app_bundle}/Contents/Frameworks/"
         chmod -R a+rX "${app_bundle}/Contents/Frameworks/KeyboardShortcuts.framework"
         echo "   - KeyboardShortcuts.framework 已嵌入"
+    fi
+
+    # 9. 复制 CodexBarCLI 到 Helpers 目录
+    local cli_path="${ROOT_DIR}/.build/${conf}/CodexBarCLI"
+    if [[ -f "${cli_path}" ]]; then
+        echo ">> 复制 CodexBarCLI 到 Helpers 目录..."
+        mkdir -p "${app_bundle}/Contents/Helpers"
+        cp "${cli_path}" "${app_bundle}/Contents/Helpers/CodexBarCLI"
+        chmod +x "${app_bundle}/Contents/Helpers/CodexBarCLI"
+        echo "   - CodexBarCLI 已复制"
+    else
+        echo "   - 警告: 未找到 CodexBarCLI (在 ${cli_path})"
+        echo "     请先运行 'swift build --product CodexBarCLI' 或 './Scripts/build.sh cli'"
     fi
 
     echo "=============================================="
@@ -234,7 +305,9 @@ build() {
 }
 
 # 主逻辑
-if [[ "${BUILD_TYPE}" == "app" ]]; then
+if [[ "${BUILD_TYPE}" == "cli" ]]; then
+    build_cli "${BUILD_CONFIG}"
+elif [[ "${BUILD_TYPE}" == "app" ]]; then
     build_app "${BUILD_CONFIG}"
 elif [[ "${BUILD_TYPE}" == "dmg" ]]; then
     build_dmg "${BUILD_CONFIG}"
