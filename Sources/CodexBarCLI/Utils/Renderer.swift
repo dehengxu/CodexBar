@@ -34,6 +34,9 @@ public func outputUsageText(results: [ProviderResult], jsonOnly: Bool) {
 
     if !lines.isEmpty {
         print(lines.joined(separator: "\n"))
+    } else if results.contains(where: { !$0.success }) && !jsonOnly {
+        // All providers failed
+        print("No data available. All provider queries failed.")
     }
 }
 
@@ -82,6 +85,9 @@ public func outputCostText(results: [CostResult], jsonOnly: Bool) {
 
     if !lines.isEmpty {
         print(lines.joined(separator: "\n"))
+    } else if results.contains(where: { !$0.success }) && !jsonOnly {
+        // All providers failed
+        print("No cost data available. All provider queries failed.")
     }
 }
 

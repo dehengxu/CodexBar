@@ -52,9 +52,13 @@ public func parseCostOptions(_ argv: [String]) -> (options: CostOptions, remaini
                     opts.provider = .all
                 } else if let provider = ProviderDescriptorRegistry.cliNameMap[value] {
                     opts.provider = .single(provider)
+                } else {
+                    // Invalid provider - will be handled later
+                    fputs("Warning: Unknown provider '\(value)'\n", stderr)
                 }
                 i += 2
             } else {
+                fputs("Error: --provider requires a value\n", stderr)
                 i += 1
             }
         case "-f", "--format":

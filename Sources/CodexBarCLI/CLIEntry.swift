@@ -47,9 +47,7 @@ struct CodexBarCLI {
             if command.hasPrefix("-") {
                 runUsageSync(argv)
             } else {
-                fputs("Unknown command: \(command)\n", stderr)
-                fputs("Run 'codexbar --help' for usage information.\n", stderr)
-                exit(CLIExitCode.generalError.rawValue)
+                exitWithError(CLIError.unknownCommand(command), jsonOnly: false)
             }
         }
     }

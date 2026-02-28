@@ -58,9 +58,13 @@ public func parseUsageOptions(_ argv: [String]) -> (options: UsageOptions, remai
                     opts.provider = .all
                 } else if let provider = ProviderDescriptorRegistry.cliNameMap[value] {
                     opts.provider = .single(provider)
+                } else {
+                    // Invalid provider - will be handled later
+                    fputs("Warning: Unknown provider '\(value)'\n", stderr)
                 }
                 i += 2
             } else {
+                fputs("Error: --provider requires a value\n", stderr)
                 i += 1
             }
         case "--account":
