@@ -237,3 +237,5 @@ RETURN caller.name, caller.filePath
 ```
 
 <!-- gitnexus:end -->
+
+@AGENTS.md
