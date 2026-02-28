@@ -187,11 +187,13 @@ public struct ProviderSettingsSnapshot: Sendable {
         public let apiRegion: String?
         public let cookieSource: ProviderCookieSource
         public let cookieHeader: String?
+        public let curlCommand: String?
 
-        public init(apiRegion: String?, cookieSource: ProviderCookieSource, cookieHeader: String?) {
+        public init(apiRegion: String?, cookieSource: ProviderCookieSource, cookieHeader: String?, curlCommand: String?) {
             self.apiRegion = apiRegion
             self.cookieSource = cookieSource
             self.cookieHeader = cookieHeader
+            self.curlCommand = curlCommand
         }
     }
 
@@ -199,11 +201,13 @@ public struct ProviderSettingsSnapshot: Sendable {
         public let apiRegion: String?
         public let cookieSource: ProviderCookieSource
         public let cookieHeader: String?
+        public let curlCommand: String?
 
-        public init(apiRegion: String?, cookieSource: ProviderCookieSource, cookieHeader: String?) {
+        public init(apiRegion: String?, cookieSource: ProviderCookieSource, cookieHeader: String?, curlCommand: String?) {
             self.apiRegion = apiRegion
             self.cookieSource = cookieSource
             self.cookieHeader = cookieHeader
+            self.curlCommand = curlCommand
         }
     }
 

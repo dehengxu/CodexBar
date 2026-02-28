@@ -239,6 +239,28 @@ public struct ArkUsageFetcher: Sendable {
 
         return lines.joined(separator: "\n")
     }
+
+    /// Parses a curl command string and extracts the cookie header
+    public static func parseCurlCommand(_ curlCommand: String) -> String? {
+        // Extract -b or --cookie values
+        let patterns = [
+            #"-b\s+['"]([^'"]+)['"]"#,
+            #"--cookie\s+['"]([^'"]+)['"]"#,
+            #"-b\s+(\S+)"#,
+            #"--cookie\s+(\S+)"#,
+        ]
+
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []),
+               let match = regex.firstMatch(in: curlCommand, options: [], range: NSRange(curlCommand.startIndex..., in: curlCommand)),
+               let range = Range(match.range(at: 1), in: curlCommand)
+            {
+                return String(curlCommand[range])
+            }
+        }
+
+        return nil
+    }
 }
 
 /// Errors that can occur during ARK usage fetching

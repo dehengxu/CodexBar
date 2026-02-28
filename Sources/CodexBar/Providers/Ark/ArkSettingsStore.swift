@@ -32,6 +32,16 @@ extension SettingsStore {
         }
     }
 
+    var arkCurlCommand: String {
+        get { self.configSnapshot.providerConfig(for: .ark)?.curlCommand ?? "" }
+        set {
+            self.updateProviderConfig(provider: .ark) { entry in
+                entry.curlCommand = self.normalizedConfigValue(newValue)
+            }
+            self.logSecretUpdate(provider: .ark, field: "curlCommand", value: newValue)
+        }
+    }
+
     func ensureArkAPITokenLoaded() {}
 
     func ensureArkCookieLoaded() {}
@@ -42,7 +52,8 @@ extension SettingsStore {
         ProviderSettingsSnapshot.ArkProviderSettings(
             apiRegion: nil,
             cookieSource: self.arkSnapshotCookieSource(tokenOverride: tokenOverride),
-            cookieHeader: self.arkSnapshotCookieHeader(tokenOverride: tokenOverride))
+            cookieHeader: self.arkSnapshotCookieHeader(tokenOverride: tokenOverride),
+            curlCommand: self.arkCurlCommand)
     }
 
     private func arkSnapshotCookieHeader(tokenOverride: TokenAccountOverride?) -> String {

@@ -32,6 +32,16 @@ extension SettingsStore {
         }
     }
 
+    var bailianCurlCommand: String {
+        get { self.configSnapshot.providerConfig(for: .bailian)?.curlCommand ?? "" }
+        set {
+            self.updateProviderConfig(provider: .bailian) { entry in
+                entry.curlCommand = self.normalizedConfigValue(newValue)
+            }
+            self.logSecretUpdate(provider: .bailian, field: "curlCommand", value: newValue)
+        }
+    }
+
     func ensureBailianAPITokenLoaded() {}
 
     func ensureBailianCookieLoaded() {}
@@ -42,7 +52,8 @@ extension SettingsStore {
         ProviderSettingsSnapshot.BailianProviderSettings(
             apiRegion: nil,
             cookieSource: self.bailianSnapshotCookieSource(tokenOverride: tokenOverride),
-            cookieHeader: self.bailianSnapshotCookieHeader(tokenOverride: tokenOverride))
+            cookieHeader: self.bailianSnapshotCookieHeader(tokenOverride: tokenOverride),
+            curlCommand: self.bailianCurlCommand)
     }
 
     private func bailianSnapshotCookieHeader(tokenOverride: TokenAccountOverride?) -> String {

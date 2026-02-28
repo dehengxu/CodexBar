@@ -16,6 +16,7 @@ struct BailianProviderImplementation: ProviderImplementation {
         _ = settings.bailianAPIToken
         _ = settings.bailianCookieSource
         _ = settings.bailianCookieHeader
+        _ = settings.bailianCurlCommand
     }
 
     @MainActor
@@ -48,7 +49,7 @@ struct BailianProviderImplementation: ProviderImplementation {
                 source: context.settings.bailianCookieSource,
                 keychainDisabled: context.settings.debugDisableKeychainAccess,
                 auto: "Automatic imports browser cookies.",
-                manual: "Paste a Cookie header or cURL capture from Bailian settings.",
+                manual: "Paste a Cookie header or cURL command from Bailian settings.",
                 off: "Bailian cookies are disabled.")
         }
 
@@ -67,7 +68,23 @@ struct BailianProviderImplementation: ProviderImplementation {
 
     @MainActor
     func settingsFields(context: ProviderSettingsContext) -> [ProviderSettingsFieldDescriptor] {
-        [
+        var fields: [ProviderSettingsFieldDescriptor] = []
+
+        // Curl command field
+        fields.append(
+            ProviderSettingsFieldDescriptor(
+                id: "bailian-curl-command",
+                title: "Curl Command",
+                subtitle: "Paste a full curl command to extract cookies and auth",
+                kind: .secure,
+                placeholder: "curl 'https://...' -H 'Cookie: ...'",
+                binding: context.stringBinding(\.bailianCurlCommand),
+                actions: [],
+                isVisible: nil,
+                onActivate: nil))
+
+        // Cookie field (shown when cookie source is manual)
+        fields.append(
             ProviderSettingsFieldDescriptor(
                 id: "bailian-cookie",
                 title: "",
@@ -88,7 +105,8 @@ struct BailianProviderImplementation: ProviderImplementation {
                         }),
                 ],
                 isVisible: { context.settings.bailianCookieSource == .manual },
-                onActivate: { context.settings.ensureBailianCookieLoaded() }),
-        ]
+                onActivate: { context.settings.ensureBailianCookieLoaded() }))
+
+        return fields
     }
 }

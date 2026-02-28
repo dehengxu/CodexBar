@@ -16,6 +16,7 @@ struct ArkProviderImplementation: ProviderImplementation {
         _ = settings.arkAPIToken
         _ = settings.arkCookieSource
         _ = settings.arkCookieHeader
+        _ = settings.arkCurlCommand
     }
 
     @MainActor
@@ -48,7 +49,7 @@ struct ArkProviderImplementation: ProviderImplementation {
                 source: context.settings.arkCookieSource,
                 keychainDisabled: context.settings.debugDisableKeychainAccess,
                 auto: "Automatic imports browser cookies.",
-                manual: "Paste a Cookie header or cURL capture from ARK settings.",
+                manual: "Paste a Cookie header or cURL command from ARK settings.",
                 off: "ARK cookies are disabled.")
         }
 
@@ -67,7 +68,23 @@ struct ArkProviderImplementation: ProviderImplementation {
 
     @MainActor
     func settingsFields(context: ProviderSettingsContext) -> [ProviderSettingsFieldDescriptor] {
-        [
+        var fields: [ProviderSettingsFieldDescriptor] = []
+
+        // Curl command field
+        fields.append(
+            ProviderSettingsFieldDescriptor(
+                id: "ark-curl-command",
+                title: "Curl Command",
+                subtitle: "Paste a full curl command to extract cookies and auth",
+                kind: .secure,
+                placeholder: "curl 'https://...' -H 'Cookie: ...'",
+                binding: context.stringBinding(\.arkCurlCommand),
+                actions: [],
+                isVisible: nil,
+                onActivate: nil))
+
+        // Cookie field (shown when cookie source is manual)
+        fields.append(
             ProviderSettingsFieldDescriptor(
                 id: "ark-cookie",
                 title: "",
@@ -88,7 +105,8 @@ struct ArkProviderImplementation: ProviderImplementation {
                         }),
                 ],
                 isVisible: { context.settings.arkCookieSource == .manual },
-                onActivate: { context.settings.ensureArkCookieLoaded() }),
-        ]
+                onActivate: { context.settings.ensureArkCookieLoaded() }))
+
+        return fields
     }
 }
