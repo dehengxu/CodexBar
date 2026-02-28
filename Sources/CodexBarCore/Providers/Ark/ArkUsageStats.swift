@@ -128,6 +128,36 @@ public struct ArkUsageFetcher: Sendable {
         return URL(string: "https://\(host)/\(Self.quotaAPIPath)")!
     }
 
+    /// Executes a curl command and parses the response
+    public static func fetchViaCurl(curlCommand: String) async throws -> ArkUsageSnapshot? {
+        // Execute curl command
+        let process = Process()
+        let pipe = Pipe()
+
+        process.executableURL = URL(fileURLWithPath: "/bin/bash")
+        process.arguments = ["-c", curlCommand]
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+
+        try process.run()
+        process.waitUntilExit()
+
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+
+        guard !data.isEmpty else {
+            Self.log.error("Curl returned empty response")
+            return nil
+        }
+
+        // Log raw response for debugging
+        if let jsonString = String(data: data, encoding: .utf8) {
+            Self.log.debug("Curl response: \(jsonString)")
+        }
+
+        // Parse the JSON response
+        return try Self.parseUsageSnapshot(from: data)
+    }
+
     /// Fetches usage stats from ARK using the provided API key and/or cookie
     public static func fetchUsage(
         apiKey: String,

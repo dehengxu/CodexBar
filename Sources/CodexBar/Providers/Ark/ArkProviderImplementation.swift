@@ -26,11 +26,26 @@ struct ArkProviderImplementation: ProviderImplementation {
 
     @MainActor
     func isAvailable(context: ProviderAvailabilityContext) -> Bool {
+        // Check for API token in environment
         if ArkSettingsReader.apiToken(environment: context.environment) != nil {
             return true
         }
+        // Check for API token in settings
         context.settings.ensureArkAPITokenLoaded()
-        return !context.settings.arkAPIToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        if !context.settings.arkAPIToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+        // Check for curl command
+        let curlCommand = context.settings.arkCurlCommand
+        if !curlCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+        // Check for cookie header (manual mode)
+        let cookieHeader = context.settings.arkCookieHeader
+        if !cookieHeader.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+        return false
     }
 
     @MainActor
@@ -75,7 +90,7 @@ struct ArkProviderImplementation: ProviderImplementation {
             ProviderSettingsFieldDescriptor(
                 id: "ark-curl-command",
                 title: "Curl Command",
-                subtitle: "Paste a full curl command to extract cookies and auth",
+                subtitle: "Paste a full curl command to execute directly",
                 kind: .secure,
                 placeholder: "curl 'https://...' -H 'Cookie: ...'",
                 binding: context.stringBinding(\.arkCurlCommand),

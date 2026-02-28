@@ -42,59 +42,66 @@ struct ArkAPIFetchStrategy: ProviderFetchStrategy {
     let kind: ProviderFetchKind = .apiToken
 
     func isAvailable(_ context: ProviderFetchContext) async -> Bool {
-        // Check for API token or curl command
+        // Check for API token in environment
         if Self.resolveToken(environment: context.env) != nil {
             return true
         }
-        // Check for curl command with cookies
+        // Check for curl command
         if let curlCommand = context.settings?.ark?.curlCommand,
-           !curlCommand.isEmpty,
-           ArkUsageFetcher.parseCurlCommand(curlCommand) != nil {
+           !curlCommand.isEmpty {
+            return true
+        }
+        // Check for cookie header
+        if let cookieHeader = context.settings?.ark?.cookieHeader,
+           !cookieHeader.isEmpty {
             return true
         }
         return false
     }
 
     func fetch(_ context: ProviderFetchContext) async throws -> ProviderFetchResult {
-        var apiKey: String?
-        var cookieHeader: String?
+        // Priority: 1. curl command 2. cookie header 3. API key
+        var usage: ArkUsageSnapshot?
 
-        // Try to get API key from environment
-        apiKey = Self.resolveToken(environment: context.env)
-
-        // Try to get cookie from curl command
+        // Try curl command first
         if let curlCommand = context.settings?.ark?.curlCommand,
            !curlCommand.isEmpty {
-            cookieHeader = ArkUsageFetcher.parseCurlCommand(curlCommand)
+            do {
+                usage = try await ArkUsageFetcher.fetchViaCurl(curlCommand: curlCommand)
+                if usage != nil {
+                    return self.makeResult(
+                        usage: usage!.toUsageSnapshot(),
+                        sourceLabel: "curl")
+                }
+            } catch {
+                // Continue to try other methods
+            }
         }
 
-        // Also check direct cookie header setting
-        if cookieHeader == nil || cookieHeader?.isEmpty == true {
-            cookieHeader = context.settings?.ark?.cookieHeader
-        }
-
-        // Use API key if available, otherwise use cookie-only mode
-        let usage: ArkUsageSnapshot
-
-        if let key = apiKey, !key.isEmpty {
-            // Use API key + cookie
+        // Try cookie header
+        if let cookieHeader = context.settings?.ark?.cookieHeader,
+           !cookieHeader.isEmpty {
+            let apiKey = Self.resolveToken(environment: context.env) ?? ""
             usage = try await ArkUsageFetcher.fetchUsage(
-                apiKey: key,
+                apiKey: apiKey,
                 cookieHeader: cookieHeader,
                 environment: context.env)
-        } else if let cookie = cookieHeader, !cookie.isEmpty {
-            // Use cookie only (from curl command or manual)
-            usage = try await ArkUsageFetcher.fetchUsage(
-                apiKey: "",
-                cookieHeader: cookie,
-                environment: context.env)
-        } else {
-            throw ArkSettingsError.missingToken
+            return self.makeResult(
+                usage: usage!.toUsageSnapshot(),
+                sourceLabel: "api")
         }
 
-        return self.makeResult(
-            usage: usage.toUsageSnapshot(),
-            sourceLabel: "api")
+        // Try API key
+        if let apiKey = Self.resolveToken(environment: context.env), !apiKey.isEmpty {
+            usage = try await ArkUsageFetcher.fetchUsage(
+                apiKey: apiKey,
+                environment: context.env)
+            return self.makeResult(
+                usage: usage!.toUsageSnapshot(),
+                sourceLabel: "api")
+        }
+
+        throw ArkSettingsError.missingToken
     }
 
     func shouldFallback(on _: Error, context _: ProviderFetchContext) -> Bool {
