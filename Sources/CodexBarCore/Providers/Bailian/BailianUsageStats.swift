@@ -223,7 +223,21 @@ private struct BailianQuotaInfo: Decodable {
             resetTime = perBillMonthQuotaNextRefreshTime
         }
 
-        let resetDate = resetTime.map { Date(timeIntervalSince1970: TimeInterval($0) / 1000) }
+        // Handle both millisecond and second timestamps
+        let resetDate: Date?
+        if let ts = resetTime {
+            if ts > 1_000_000_000_000 {
+                // Millisecond timestamp
+                resetDate = Date(timeIntervalSince1970: TimeInterval(ts) / 1000)
+            } else if ts > 1_000_000_000 {
+                // Second timestamp
+                resetDate = Date(timeIntervalSince1970: TimeInterval(ts))
+            } else {
+                resetDate = nil
+            }
+        } else {
+            resetDate = nil
+        }
         return BailianLimitEntry(
             limitType: type,
             usedCount: used,

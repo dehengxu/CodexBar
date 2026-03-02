@@ -176,7 +176,21 @@ private struct ArkQuotaUsageItem: Decodable {
     func toLimitEntry() -> ArkLimitEntry? {
         guard let level = self.Level else { return nil }
         let percent = self.Percent ?? 0
-        let resetTime = self.ResetTimestamp.map { Date(timeIntervalSince1970: TimeInterval($0) / 1000) }
+        // Handle both millisecond and second timestamps
+        let resetTime: Date?
+        if let ts = self.ResetTimestamp {
+            if ts > 1_000_000_000_000 {
+                // Millisecond timestamp
+                resetTime = Date(timeIntervalSince1970: TimeInterval(ts) / 1000)
+            } else if ts > 1_000_000_000 {
+                // Second timestamp
+                resetTime = Date(timeIntervalSince1970: TimeInterval(ts))
+            } else {
+                resetTime = nil
+            }
+        } else {
+            resetTime = nil
+        }
         return ArkLimitEntry(level: level, usedPercent: percent, nextResetTime: resetTime)
     }
 }
