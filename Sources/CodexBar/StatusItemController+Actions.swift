@@ -136,7 +136,7 @@ extension StatusItemController {
     }
 
     @objc func showSettingsAbout() {
-        self.openSettings(tab: .about)
+        showAbout()
     }
 
     func openMenuFromShortcut() {
@@ -155,8 +155,12 @@ extension StatusItemController {
         DispatchQueue.main.async {
             self.preferencesSelection.tab = tab
             NSApp.activate(ignoringOtherApps: true)
-            // Use SwiftUI Settings scene to open preferences window
-            _ = NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+
+            // Use notification for maximum compatibility across all macOS versions
+            NotificationCenter.default.post(
+                name: .codexbarOpenSettings,
+                object: nil,
+                userInfo: ["tab": tab.rawValue])
         }
     }
 

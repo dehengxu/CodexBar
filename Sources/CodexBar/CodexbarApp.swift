@@ -253,12 +253,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settings: SettingsStore?
     private var account: AccountInfo?
     private var preferencesSelection: PreferencesSelection?
+    private var preferencesWindowController: PreferencesWindowController?
 
     func configure(store: UsageStore, settings: SettingsStore, account: AccountInfo, selection: PreferencesSelection) {
         self.store = store
         self.settings = settings
         self.account = account
         self.preferencesSelection = selection
+        self.preferencesWindowController = PreferencesWindowController(
+            settings: settings,
+            store: store,
+            updater: self.updaterController,
+            selection: selection)
     }
 
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -273,6 +279,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { @MainActor [weak self] in
                 self?.statusController?.openMenuFromShortcut()
             }
+        }
+
+        // Add observer for settings window opening
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(self.handleOpenSettings(_:)),
+            name: .codexbarOpenSettings,
+            object: nil)
+    }
+
+    @objc private func handleOpenSettings(_ notification: Notification) {
+        guard let tabRawValue = notification.userInfo?["tab"] as? String,
+              let tab = PreferencesTab(rawValue: tabRawValue) else {
+            return
+        }
+
+        // Use AppKit window controller for maximum compatibility across all macOS versions
+        if let windowController = self.preferencesWindowController {
+            windowController.show(tab: tab)
+            return
+        }
+
+        // Fallback to SwiftUI Settings scene if window controller is not available
+        self.preferencesSelection?.tab = tab
+        NSApp.activate(ignoringOtherApps: true)
+        let selector = Selector(("showPreferencesWindow:"))
+        if NSApp.responds(to: selector) {
+            _ = NSApp.sendAction(selector, to: nil, from: nil)
         }
     }
 
