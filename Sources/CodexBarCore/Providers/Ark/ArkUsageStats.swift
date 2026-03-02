@@ -61,11 +61,88 @@ extension ArkUsageSnapshot {
     }
 
     private static func rateWindow(for limit: ArkLimitEntry) -> RateWindow {
-        RateWindow(
+        // Use API provided reset time if it's in the future, otherwise calculate next reset time
+        let resetsAt = Self.resolveResetTime(limit.nextResetTime, level: limit.level)
+        return RateWindow(
             usedPercent: limit.usedPercent,
-            windowMinutes: nil,
-            resetsAt: limit.nextResetTime,
+            windowMinutes: Self.windowMinutes(for: limit.level),
+            resetsAt: resetsAt,
             resetDescription: limit.level)
+    }
+
+    /// Resolve reset time: use API provided time if in future, otherwise calculate next reset time
+    private static func resolveResetTime(_ apiResetTime: Date?, level: String) -> Date? {
+        let now = Date()
+
+        // If API provides a future reset time, use it
+        if let apiTime = apiResetTime, apiTime > now {
+            return apiTime
+        }
+
+        // If API provides a past reset time (expired), calculate next reset time
+        if let apiTime = apiResetTime, apiTime <= now {
+            return Self.calculateNextResetTime(for: level, from: apiTime)
+        }
+
+        // If no API reset time, calculate from now
+        return Self.calculateNextResetTime(for: level, from: now)
+    }
+
+    /// Calculate next reset time based on limit type
+    /// For Session: adds 5 hours to the base date (assuming it was the last reset time)
+    /// For Weekly/Monthly: finds next Sunday/Month-end after the base date
+    private static func calculateNextResetTime(for level: String, from baseDate: Date) -> Date? {
+        let calendar = Calendar.current
+        let levelLower = level.lowercased()
+
+        if levelLower.contains("session") {
+            // Session resets 5 hours after the base date
+            return calendar.date(byAdding: .hour, value: 5, to: baseDate)
+        } else if levelLower.contains("week") {
+            // Weekly resets at next Sunday 23:59:59 after the base date
+            var components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: baseDate)
+            components.weekday = 1 // Sunday
+            components.hour = 23
+            components.minute = 59
+            components.second = 59
+
+            guard let nextSunday = calendar.date(from: components) else { return nil }
+            if nextSunday <= baseDate {
+                components.weekOfYear = components.weekOfYear! + 1
+                return calendar.date(from: components)
+            }
+            return nextSunday
+        } else if levelLower.contains("month") {
+            // Monthly resets at next month-end after the base date
+            var components = calendar.dateComponents([.year, .month], from: baseDate)
+            components.month = components.month! + 1
+            components.day = 1
+            components.hour = 0
+            components.minute = 0
+            components.second = 0
+            guard let nextMonthStart = calendar.date(from: components) else { return nil }
+            let lastDayOfMonth = nextMonthStart.addingTimeInterval(-1)
+            if lastDayOfMonth <= baseDate {
+                components.month = components.month! + 1
+                guard let nextNextMonthStart = calendar.date(from: components) else { return nil }
+                return nextNextMonthStart.addingTimeInterval(-1)
+            }
+            return lastDayOfMonth
+        }
+        return nil
+    }
+
+    /// Window duration in minutes based on limit type
+    private static func windowMinutes(for level: String) -> Int? {
+        let levelLower = level.lowercased()
+        if levelLower.contains("session") {
+            return 5 * 60  // 5 hours
+        } else if levelLower.contains("week") {
+            return 7 * 24 * 60  // 7 days
+        } else if levelLower.contains("month") {
+            return 30 * 24 * 60  // 30 days (approximate)
+        }
+        return nil
     }
 }
 

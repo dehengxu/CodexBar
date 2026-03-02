@@ -61,11 +61,75 @@ extension BailianUsageSnapshot {
     }
 
     private static func rateWindow(for limit: BailianLimitEntry) -> RateWindow {
-        RateWindow(
+        // Use API provided reset time if it's in the future, otherwise calculate next reset time
+        let resetsAt = Self.resolveResetTime(limit.nextResetTime, limitType: limit.limitType)
+        return RateWindow(
             usedPercent: limit.usedPercent,
             windowMinutes: limit.windowMinutes,
-            resetsAt: limit.nextResetTime,
+            resetsAt: resetsAt,
             resetDescription: limit.limitType.rawValue)
+    }
+
+    /// Resolve reset time: use API provided time if in future, otherwise calculate next reset time
+    private static func resolveResetTime(_ apiResetTime: Date?, limitType: BailianLimitType) -> Date? {
+        let now = Date()
+
+        // If API provides a future reset time, use it
+        if let apiTime = apiResetTime, apiTime > now {
+            return apiTime
+        }
+
+        // If API provides a past reset time (expired), calculate next reset time
+        if let apiTime = apiResetTime, apiTime <= now {
+            return Self.calculateNextResetTime(for: limitType, from: apiTime)
+        }
+
+        // If no API reset time, calculate from now
+        return Self.calculateNextResetTime(for: limitType, from: now)
+    }
+
+    /// Calculate next reset time based on limit type
+    /// For Session: adds 5 hours to the base date (assuming it was the last reset time)
+    /// For Weekly/Monthly: finds next Sunday/Month-end after the base date
+    private static func calculateNextResetTime(for limitType: BailianLimitType, from baseDate: Date) -> Date? {
+        let calendar = Calendar.current
+
+        switch limitType {
+        case .session:
+            // Session resets 5 hours after the base date (assuming baseDate was the last reset time)
+            return calendar.date(byAdding: .hour, value: 5, to: baseDate)
+        case .weekly:
+            // Weekly resets at next Sunday 23:59:59 after the base date
+            var components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: baseDate)
+            components.weekday = 1 // Sunday
+            components.hour = 23
+            components.minute = 59
+            components.second = 59
+
+            guard let nextSunday = calendar.date(from: components) else { return nil }
+            // If we've passed this Sunday, get next week's Sunday
+            if nextSunday <= baseDate {
+                components.weekOfYear = components.weekOfYear! + 1
+                return calendar.date(from: components)
+            }
+            return nextSunday
+        case .monthly:
+            // Monthly resets at next month-end after the base date
+            var components = calendar.dateComponents([.year, .month], from: baseDate)
+            components.month = components.month! + 1
+            components.day = 1
+            components.hour = 0
+            components.minute = 0
+            components.second = 0
+            guard let nextMonthStart = calendar.date(from: components) else { return nil }
+            let lastDayOfMonth = nextMonthStart.addingTimeInterval(-1)
+            if lastDayOfMonth <= baseDate {
+                components.month = components.month! + 1
+                guard let nextNextMonthStart = calendar.date(from: components) else { return nil }
+                return nextNextMonthStart.addingTimeInterval(-1)
+            }
+            return lastDayOfMonth
+        }
     }
 }
 
