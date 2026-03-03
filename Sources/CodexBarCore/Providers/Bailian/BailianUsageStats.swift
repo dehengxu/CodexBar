@@ -223,16 +223,20 @@ private struct BailianQuotaInfo: Decodable {
             resetTime = perBillMonthQuotaNextRefreshTime
         }
 
-        // Handle both millisecond and second timestamps
+        // Handle microsecond, millisecond, and second timestamps
         let resetDate: Date?
-        if let ts = resetTime {
-            if ts > 1_000_000_000_000 {
-                // Millisecond timestamp
+        if let ts = resetTime, ts > 0 {
+            if ts > 1_000_000_000_000_000 {
+                // Microsecond timestamp (16 digits)
+                resetDate = Date(timeIntervalSince1970: TimeInterval(ts) / 1_000_000)
+            } else if ts > 1_000_000_000_000 {
+                // Millisecond timestamp (13 digits)
                 resetDate = Date(timeIntervalSince1970: TimeInterval(ts) / 1000)
             } else if ts > 1_000_000_000 {
-                // Second timestamp
+                // Second timestamp (10 digits)
                 resetDate = Date(timeIntervalSince1970: TimeInterval(ts))
             } else {
+                // Timestamp too small, likely invalid data
                 resetDate = nil
             }
         } else {

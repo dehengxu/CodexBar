@@ -176,16 +176,21 @@ private struct ArkQuotaUsageItem: Decodable {
     func toLimitEntry() -> ArkLimitEntry? {
         guard let level = self.Level else { return nil }
         let percent = self.Percent ?? 0
-        // Handle both millisecond and second timestamps
+
+        // Handle microsecond, millisecond, and second timestamps
         let resetTime: Date?
-        if let ts = self.ResetTimestamp {
-            if ts > 1_000_000_000_000 {
-                // Millisecond timestamp
+        if let ts = self.ResetTimestamp, ts > 0 {
+            if ts > 1_000_000_000_000_000 {
+                // Microsecond timestamp (16 digits)
+                resetTime = Date(timeIntervalSince1970: TimeInterval(ts) / 1_000_000)
+            } else if ts > 1_000_000_000_000 {
+                // Millisecond timestamp (13 digits)
                 resetTime = Date(timeIntervalSince1970: TimeInterval(ts) / 1000)
             } else if ts > 1_000_000_000 {
-                // Second timestamp
+                // Second timestamp (10 digits)
                 resetTime = Date(timeIntervalSince1970: TimeInterval(ts))
             } else {
+                // Timestamp too small, likely invalid data
                 resetTime = nil
             }
         } else {
